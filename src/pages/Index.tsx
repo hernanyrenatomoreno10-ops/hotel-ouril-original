@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, MapPin, ArrowUpRight } from "lucide-react";
+import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, MapPin, ArrowUpRight, type LucideIcon } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import heroImg from "@/assets/mindelo-hero.jpg";
@@ -171,7 +171,7 @@ const QuickAction = ({
   featured,
 }: {
   to: string;
-  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  icon: LucideIcon;
   title: string;
   subtitle: string;
   featured?: boolean;
