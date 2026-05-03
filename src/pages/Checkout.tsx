@@ -1,7 +1,9 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
 import { ArrowLeft, Check, ScanFace, FileText, CreditCard } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/components/AuthProvider";
+import { haptic } from "@/lib/haptics";
 
 const steps = [
   { icon: ScanFace, title: "Identidade", desc: "Validação biométrica segura" },
@@ -12,6 +14,22 @@ const steps = [
 const Checkout = () => {
   const [step, setStep] = useState(0);
   const done = step >= steps.length;
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const userName = user?.email ? user.email.split('@')[0] : "Hóspede";
+  const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
+
+  const handleNext = async () => {
+    haptic("tap");
+    if (step === 2) {
+      // Finalize checkout
+      await signOut();
+      setStep(s => s + 1);
+    } else {
+      setStep(s => s + 1);
+    }
+  };
 
   return (
     <AppShell>
@@ -90,7 +108,7 @@ const Checkout = () => {
                       <CreditCard className="h-5 w-5 text-primary" />
                     </div>
                     <p className="font-display text-xl tracking-[0.3em] mt-6">•••• 4287</p>
-                    <p className="text-xs text-muted-foreground mt-2">Alessandro Rocha · 12/27</p>
+                    <p className="text-xs text-muted-foreground mt-2">{displayName} · 12/27</p>
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
                     Será cobrado €1.558,50 após confirmação.
@@ -100,7 +118,7 @@ const Checkout = () => {
             </div>
 
             <button
-              onClick={() => setStep((s) => s + 1)}
+              onClick={handleNext}
               className="mt-6 w-full rounded-full bg-gradient-primary text-primary-foreground py-4 text-sm font-medium shadow-glow active:scale-[0.99] transition"
             >
               {step === 2 ? "Confirmar e fechar conta" : "Continuar"}
@@ -111,16 +129,16 @@ const Checkout = () => {
             <div className="mx-auto h-20 w-20 rounded-full bg-gradient-primary grid place-items-center shadow-glow">
               <Check className="h-10 w-10 text-primary-foreground" strokeWidth={2.25} />
             </div>
-            <h1 className="font-display text-3xl font-semibold mt-6">Até breve, Alessandro.</h1>
+            <h1 className="font-display text-3xl font-semibold mt-6">Até breve, {displayName}.</h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">
               A sua fatura foi enviada por email. Mindelo aguarda o seu regresso.
             </p>
-            <Link
-              to="/"
+            <button
+              onClick={() => navigate("/login")}
               className="inline-block mt-8 rounded-full glass px-6 py-3 text-sm hover:border-primary/40 transition"
             >
               Voltar ao início
-            </Link>
+            </button>
           </div>
         )}
       </div>

@@ -1,47 +1,119 @@
+import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { ArrowLeft, Clock, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
+import { supabase } from "@/lib/supabase";
 import santo from "@/assets/experience-santoantao.jpg";
 import morna from "@/assets/experience-morna.jpg";
 import sailing from "@/assets/experience-sailing.jpg";
 import laginha from "@/assets/experience-laginha.jpg";
 
-const items = [
+const SEED_ITEMS = [
   {
-    img: santo,
     title: "Travessia para Santo Antão",
     place: "Porto Novo · dia inteiro",
     price: "€185",
     rating: 4.9,
     tag: "Mais procurada",
+    img: santo,
   },
   {
-    img: morna,
     title: "Jantar com Morna ao vivo",
     place: "Café Musique · 20h",
     price: "€72",
     rating: 4.8,
     tag: "Cultura",
+    img: morna,
   },
   {
-    img: sailing,
     title: "Aluguer privado de veleiro",
     place: "Marina Mindelo · 4h",
     price: "€420",
     rating: 5.0,
     tag: "Premium",
+    img: sailing,
   },
   {
-    img: laginha,
     title: "Sunset na Praia da Laginha",
     place: "Bar Praiamar · 18h",
     price: "€38",
     rating: 4.7,
     tag: "Sunset",
+    img: laginha,
   },
 ];
 
 const Experiences = () => {
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("Tudo");
+  const [reservingId, setReservingId] = useState<string | null>(null);
+  const [dbItems, setDbItems] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchExperiences();
+  }, []);
+
+  const fetchExperiences = async () => {
+    try {
+      const { data, error } = await supabase.from('experiences').select('*');
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setDbItems(data);
+      } else {
+        setDbItems(SEED_ITEMS);
+      }
+    } catch (err) {
+      console.error("Erro ao buscar experiências:", err);
+      setDbItems(SEED_ITEMS);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const currentItems = dbItems;
+
+  const filteredItems = currentItems.filter(
+    (it) => activeCategory === "Tudo" || it.tag.includes(activeCategory) || (activeCategory === "Mar" && it.title.includes("veleiro")) || (activeCategory === "Natureza" && it.title.includes("Santo Antão"))
+  );
+
+  const handleReserve = async (item: any) => {
+    setReservingId(item.title);
+    haptic("tap");
+    
+    try {
+      // Registrar no Supabase
+      const { error } = await supabase.from('experience_reservations').insert([
+        { 
+          experience_id: item.id || null, 
+          title: item.title,
+          place: item.place,
+          status: 'confirmed',
+          user_id: (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000000'
+        }
+      ]);
+
+      if (error) throw error;
+      
+      // Fallback para persistência local (ajuda na reatividade imediata)
+      const booked = JSON.parse(localStorage.getItem('booked_experiences') || '[]');
+      localStorage.setItem('booked_experiences', JSON.stringify([...booked, item]));
+      
+      window.dispatchEvent(new CustomEvent('supabase_webhook_experience_confirmed', { detail: item }));
+
+      haptic("success");
+      toast.success("Reserva confirmada no Supabase!", {
+        description: `${item.title} agendado. O Soul IA foi notificado.`,
+      });
+    } catch (err) {
+      console.error("Erro na reserva:", err);
+      toast.error("Erro ao processar reserva no servidor.");
+    } finally {
+      setReservingId(null);
+    }
+  };
+
   return (
     <AppShell>
       <div className="px-6 pt-[max(1.5rem,env(safe-area-inset-top))]">
@@ -64,11 +136,12 @@ const Experiences = () => {
         </div>
 
         <div className="flex gap-2 mt-6 overflow-x-auto -mx-6 px-6 [&::-webkit-scrollbar]:hidden">
-          {["Tudo", "Cultura", "Mar", "Gastronomia", "Natureza"].map((c, i) => (
+          {["Tudo", "Cultura", "Mar", "Gastronomia", "Natureza"].map((c) => (
             <button
               key={c}
+              onClick={() => { setActiveCategory(c); haptic("tap"); }}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-medium transition ${
-                i === 0
+                activeCategory === c
                   ? "bg-gradient-primary text-primary-foreground shadow-glow"
                   : "glass text-muted-foreground hover:text-foreground"
               }`}
@@ -78,48 +151,69 @@ const Experiences = () => {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 gap-5 mt-6">
-          {items.map((it) => (
-            <article
-              key={it.title}
-              className="group relative overflow-hidden rounded-3xl glass shadow-elevated"
-            >
-              <div className="relative h-56 overflow-hidden">
-                <img
-                  src={it.img}
-                  alt={it.title}
-                  loading="lazy"
-                  width={1024}
-                  height={1024}
-                  className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-                <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wider text-primary border border-primary/30 bg-background/40 backdrop-blur rounded-full px-2 py-1">
-                  {it.tag}
-                </span>
-              </div>
-              <div className="p-5 -mt-8 relative">
-                <h3 className="font-display text-xl font-semibold">{it.title}</h3>
-                <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {it.place.split("·")[0]}</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{it.place.split("·")[1]}</span>
-                </div>
-                <div className="flex items-end justify-between mt-4">
-                  <div className="flex items-center gap-1 text-xs">
-                    <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-                    <span className="font-medium">{it.rating}</span>
-                    <span className="text-muted-foreground">· por pessoa</span>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-display text-2xl font-semibold">{it.price}</p>
+        <div className="grid grid-cols-1 gap-5 mt-6 pb-10">
+          {loading ? (
+            // Skeleton State
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="glass rounded-3xl overflow-hidden shadow-elevated animate-pulse">
+                <div className="h-56 bg-muted/40" />
+                <div className="p-5 space-y-3">
+                  <div className="h-6 w-2/3 bg-muted rounded-lg" />
+                  <div className="h-4 w-1/3 bg-muted rounded-lg" />
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="h-5 w-16 bg-muted rounded-lg" />
+                    <div className="h-8 w-24 bg-muted rounded-full" />
                   </div>
                 </div>
-                <button className="mt-4 w-full rounded-full bg-gradient-primary text-primary-foreground py-3 text-sm font-medium shadow-glow active:scale-[0.98] transition">
-                  Reservar
-                </button>
               </div>
-            </article>
-          ))}
+            ))
+          ) : (
+            filteredItems.map((it) => (
+              <article
+                key={it.title}
+                className="group relative overflow-hidden rounded-3xl glass shadow-elevated"
+              >
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    src={it.img}
+                    alt={it.title}
+                    loading="lazy"
+                    width={1024}
+                    height={1024}
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
+                  <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wider text-primary border border-primary/30 bg-background/40 backdrop-blur rounded-full px-2 py-1">
+                    {it.tag}
+                  </span>
+                </div>
+                <div className="p-5 -mt-8 relative">
+                  <h3 className="font-display text-xl font-semibold">{it.title}</h3>
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {it.place.split("·")[0]}</span>
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{it.place.split("·")[1]}</span>
+                  </div>
+                  <div className="flex items-end justify-between mt-4">
+                    <div className="flex items-center gap-1 text-xs">
+                      <Star className="h-3.5 w-3.5 fill-primary text-primary" />
+                      <span className="font-medium">{it.rating}</span>
+                      <span className="text-muted-foreground">· por pessoa</span>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-display text-2xl font-semibold">{it.price}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => handleReserve(it)}
+                    disabled={reservingId === it.title}
+                    className="mt-4 w-full flex items-center justify-center rounded-full bg-gradient-primary text-primary-foreground py-3 text-sm font-medium shadow-glow active:scale-[0.98] transition disabled:opacity-70 disabled:scale-100"
+                  >
+                    {reservingId === it.title ? "Reservando..." : "Reservar"}
+                  </button>
+                </div>
+              </article>
+            ))
+          )}
         </div>
       </div>
     </AppShell>

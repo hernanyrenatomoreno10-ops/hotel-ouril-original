@@ -1,15 +1,30 @@
 import { useState } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, KeyRound, ShieldCheck, Wifi } from "lucide-react";
+import { ArrowLeft, KeyRound, ShieldCheck, Wifi, Loader2, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { haptic } from "@/lib/haptics";
+import { cn } from "@/lib/utils";
+
+type KeyState = "idle" | "activating" | "unlocked";
 
 const DigitalKey = () => {
-  const [unlocked, setUnlocked] = useState(false);
+  const [keyState, setKeyState] = useState<KeyState>("idle");
 
   const handleUnlock = () => {
-    setUnlocked(true);
-    setTimeout(() => setUnlocked(false), 3500);
+    if (keyState !== "idle") return;
+    
+    haptic("tap");
+    setKeyState("activating");
+    
+    // Simulate BLE/NFC handshake (Offline capable)
+    setTimeout(() => {
+      haptic("success");
+      setKeyState("unlocked");
+      
+      // Auto lock after 3.5s
+      setTimeout(() => setKeyState("idle"), 3500);
+    }, 1200);
   };
 
   return (
@@ -29,27 +44,44 @@ const DigitalKey = () => {
           <p className="text-sm text-muted-foreground mt-2">Pestana Trópico · 4º andar</p>
         </div>
 
-        {/* Ripple visual */}
+        {/* Ripple visual & Button */}
         <div className="relative mx-auto mt-10 h-72 w-72 grid place-items-center">
-          <span className="absolute inset-0 rounded-full border border-primary/30 animate-ripple" />
-          <span className="absolute inset-0 rounded-full border border-primary/30 animate-ripple [animation-delay:600ms]" />
-          <span className="absolute inset-0 rounded-full border border-primary/30 animate-ripple [animation-delay:1200ms]" />
+          {keyState === "idle" && (
+            <>
+              <span className="absolute inset-0 rounded-full border border-primary/30 animate-ripple" />
+              <span className="absolute inset-0 rounded-full border border-primary/30 animate-ripple [animation-delay:600ms]" />
+              <span className="absolute inset-0 rounded-full border border-primary/30 animate-ripple [animation-delay:1200ms]" />
+            </>
+          )}
 
           <button
             onClick={handleUnlock}
-            className="relative h-44 w-44 rounded-full bg-gradient-primary text-primary-foreground shadow-glow grid place-items-center transition-transform active:scale-95"
+            disabled={keyState !== "idle"}
+            className={cn(
+              "relative h-44 w-44 rounded-full shadow-glow grid place-items-center transition-all duration-500",
+              keyState === "idle" && "bg-gradient-primary text-primary-foreground active:scale-95",
+              keyState === "activating" && "bg-muted text-primary scale-95 shadow-none",
+              keyState === "unlocked" && "bg-green-500 text-white shadow-[0_0_40px_rgba(34,197,94,0.4)] scale-100"
+            )}
           >
             <div className="flex flex-col items-center gap-2">
-              <KeyRound className="h-10 w-10" strokeWidth={1.75} />
-              <span className="text-xs font-medium tracking-wider uppercase">
-                {unlocked ? "Aberta" : "Tocar para abrir"}
+              {keyState === "idle" && <KeyRound className="h-10 w-10" strokeWidth={1.75} />}
+              {keyState === "activating" && <Loader2 className="h-10 w-10 animate-spin" strokeWidth={1.75} />}
+              {keyState === "unlocked" && <CheckCircle2 className="h-10 w-10 animate-in zoom-in" strokeWidth={1.75} />}
+              
+              <span className="text-xs font-medium tracking-wider uppercase mt-1">
+                {keyState === "idle" && "Tocar para abrir"}
+                {keyState === "activating" && "Conectando..."}
+                {keyState === "unlocked" && "Aberta"}
               </span>
             </div>
           </button>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          {unlocked ? "Porta destrancada — bem-vindo." : "Aproxime o telemóvel da fechadura"}
+        <p className="text-center text-xs text-muted-foreground mt-6 h-4">
+          {keyState === "idle" && "Aproxime o telemóvel da fechadura"}
+          {keyState === "activating" && "A autenticar via NFC (Seguro)"}
+          {keyState === "unlocked" && <span className="text-green-500 font-medium">Porta destrancada — bem-vindo.</span>}
         </p>
 
         <div className="mt-10 glass rounded-2xl p-4 grid grid-cols-2 gap-3">
