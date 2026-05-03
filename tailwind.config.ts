@@ -80,10 +80,33 @@ export default {
             height: "0",
           },
         },
+        "ripple": {
+          "0%": { transform: "scale(0.6)", opacity: "0.7" },
+          "100%": { transform: "scale(2.4)", opacity: "0" },
+        },
+        "fade-up": {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.5)" },
+          "50%": { boxShadow: "0 0 0 24px hsl(var(--primary) / 0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "ripple": "ripple 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite",
+        "fade-up": "fade-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "pulse-glow": "pulse-glow 2.5s ease-in-out infinite",
+      },
+      fontFamily: {
+        display: ['Urbanist', 'Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       },
     },
   },
