@@ -9,6 +9,7 @@ import DigitalKey from "./pages/DigitalKey.tsx";
 import Concierge from "./pages/Concierge.tsx";
 import Experiences from "./pages/Experiences.tsx";
 import Checkout from "./pages/Checkout.tsx";
+import RoomControl from "./pages/RoomControl.tsx";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/concierge" element={<Concierge />} />
           <Route path="/experiences" element={<Experiences />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/room" element={<RoomControl />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

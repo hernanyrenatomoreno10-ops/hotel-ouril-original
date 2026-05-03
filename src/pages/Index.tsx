@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
-import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, MapPin, ArrowUpRight, type LucideIcon } from "lucide-react";
+import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, MapPin, ArrowUpRight, SlidersHorizontal, type LucideIcon } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import { Button } from "@/components/ui/button";
+import LivingContext from "@/components/LivingContext";
 import heroImg from "@/assets/mindelo-hero.jpg";
 
 const Index = () => {
@@ -83,8 +83,11 @@ const Index = () => {
         </div>
       </header>
 
+      {/* Living context — real-time ambient strip */}
+      <LivingContext />
+
       {/* Quick actions */}
-      <section className="px-6 -mt-2">
+      <section className="px-6 mt-6">
         <div className="grid grid-cols-2 gap-3">
           <QuickAction
             to="/key"
@@ -92,6 +95,12 @@ const Index = () => {
             title="Digital Key"
             subtitle="Suite 412 · Aproxime"
             featured
+          />
+          <QuickAction
+            to="/room"
+            icon={SlidersHorizontal}
+            title="Room Control"
+            subtitle="Cenas · clima · cortinas"
           />
           <QuickAction
             to="/concierge"
@@ -104,12 +113,6 @@ const Index = () => {
             icon={Wine}
             title="Experiências"
             subtitle="Mindelo & Sto. Antão"
-          />
-          <QuickAction
-            to="/checkout"
-            icon={ArrowUpRight}
-            title="Smart Check-out"
-            subtitle="Fatura instantânea"
           />
         </div>
       </section>
@@ -148,17 +151,6 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Floating Digital Key FAB */}
-      <Link
-        to="/key"
-        aria-label="Abrir Digital Key"
-        className="fixed bottom-28 right-5 z-30 group"
-      >
-        <span className="absolute inset-0 rounded-full bg-primary/40 animate-pulse-glow" />
-        <span className="relative flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary text-primary-foreground shadow-glow transition-transform group-active:scale-95">
-          <KeyRound className="h-6 w-6" strokeWidth={2} />
-        </span>
-      </Link>
     </AppShell>
   );
 };
