@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
 import BottomNav from "./BottomNav";
 import Spotlight from "./Spotlight";
+import InstallBanner from "./InstallBanner";
 import { Search } from "lucide-react";
 import { haptic } from "@/lib/haptics";
 
@@ -35,6 +36,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
       </div>
 
       <Spotlight open={spotlightOpen} onOpenChange={setSpotlightOpen} />
+      <InstallBanner />
       <BottomNav />
     </div>
   );
