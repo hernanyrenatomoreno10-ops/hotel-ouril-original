@@ -17,7 +17,7 @@ export const BottomNav = () => {
       className="fixed bottom-0 left-0 right-0 z-40 pb-[env(safe-area-inset-bottom)]"
     >
       <div className="mx-auto max-w-md px-4 pb-4">
-        <div className="glass shadow-elevated rounded-full px-2 py-2 flex items-center justify-between">
+        <div className="glass-deep shadow-elevated rounded-full px-2 py-2 flex items-center justify-between">
           {items.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={to}

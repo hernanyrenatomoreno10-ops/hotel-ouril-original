@@ -1,24 +1,29 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, MapPin, ArrowUpRight, SlidersHorizontal, Stethoscope, type LucideIcon } from "lucide-react";
+import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight, SlidersHorizontal, Stethoscope, type LucideIcon } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import LivingContext from "@/components/LivingContext";
 import heroImg from "@/assets/mindelo-hero.jpg";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
+import { useDayPhase, phaseClass, phaseGreeting } from "@/lib/context";
+import { FadeUp } from "@/components/Motion";
+import { ReservationSkeleton, ListItemSkeleton } from "@/components/Skeleton";
+import { motion } from "framer-motion";
 
 const Index = () => {
   const { user } = useAuth();
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const phase = useDayPhase();
+  const greeting = phaseGreeting(phase);
+  const isNight = phase === "night" || phase === "evening";
   const userEvent = "O seu veleiro parte às 09:00"; // Mock context
   
   const userName = user?.email ? user.email.split('@')[0] : "Alessandro";
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
 
   const [bookedExperiences, setBookedExperiences] = useState<any[]>([]);
-
   const [currentBooking, setCurrentBooking] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStayData();
@@ -53,11 +58,14 @@ const Index = () => {
       console.warn("Usando dados locais:", err);
       const local = JSON.parse(localStorage.getItem('booked_experiences') || '[]');
       setBookedExperiences(local);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <AppShell>
+      <div className={`${phaseClass(phase)} pointer-events-none fixed inset-x-0 top-0 h-[60vh] ctx-tint -z-0`} />
       {/* Hero */}
       <header className="relative h-[78vh] min-h-[560px] w-full overflow-hidden">
         <img
@@ -93,25 +101,31 @@ const Index = () => {
           </div>
 
           {/* Greeting */}
-          <div className="mt-auto animate-fade-up">
+          <FadeUp className="mt-auto" delay={0.05}>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sun className="h-3.5 w-3.5 text-primary" />
+              {isNight ? <Moon className="h-3.5 w-3.5 text-primary" /> : <Sun className="h-3.5 w-3.5 text-primary" />}
               <span>{greeting}, São Vicente · 24°C</span>
             </div>
-            <h1 className="mt-3 font-display text-5xl font-semibold leading-[1.05] text-balance">
+            <h1 className="mt-3 font-display text-display-xl font-semibold text-balance">
               {greeting},<br />
               <span className="bg-gradient-primary bg-clip-text text-transparent">{displayName}.</span>
             </h1>
             <p className="mt-3 max-w-sm text-sm text-muted-foreground">
-              {hour >= 18 
+              {phase === "night"
                 ? "O oceano está calmo esta noite — perfeito para uma Morna ao luar."
-                : "O sol brilha sobre o Porto Grande. " + userEvent + "."}
+                : phase === "evening"
+                ? "O pôr-do-sol pinta o Monte Cara. Tempo de jantar à beira-mar."
+                : phase === "morning"
+                ? `Café da manhã servido até às 11h. ${userEvent}.`
+                : `O sol brilha sobre o Porto Grande. ${userEvent}.`}
             </p>
-          </div>
+          </FadeUp>
 
           {/* Reservation card */}
-          <div className="relative z-10 mt-6 mb-6 glass rounded-3xl p-5 shadow-elevated">
-            <div className="flex items-start justify-between">
+          <FadeUp className="relative z-10 mt-6 mb-6" delay={0.15}>
+            {loading ? <ReservationSkeleton /> : (
+            <div className="glass rounded-3xl p-5 shadow-elevated">
+              <div className="flex items-start justify-between">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Reserva atual</p>
                 <p className="mt-1 font-display text-lg font-semibold">
@@ -124,8 +138,8 @@ const Index = () => {
               <span className="rounded-full bg-primary/10 text-primary text-[10px] font-medium px-2.5 py-1 border border-primary/20">
                 Check-in
               </span>
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3 text-center">
               {[
                 { l: "Chegada", v: currentBooking ? new Date(currentBooking.check_in_date).toLocaleDateString('pt-PT', {day: '2-digit', month: 'short'}) : "Hoje" },
                 { l: "Saída", v: currentBooking ? new Date(currentBooking.check_out_date).toLocaleDateString('pt-PT', {day: '2-digit', month: 'short'}) : "07 Mai" },
@@ -136,8 +150,10 @@ const Index = () => {
                   <p className="text-sm font-semibold mt-0.5">{s.v}</p>
                 </div>
               ))}
+              </div>
             </div>
-          </div>
+            )}
+          </FadeUp>
         </div>
       </header>
 
@@ -146,25 +162,31 @@ const Index = () => {
 
       {/* Quick actions */}
       <section className="px-6 mt-6">
-        <div className="grid grid-cols-2 gap-3">
+        <motion.div
+          className="grid grid-cols-2 gap-3"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.1 } } }}
+        >
           <QuickAction
             to="/key"
             icon={KeyRound}
             title="Digital Key"
             subtitle="Suite 412 · Aproxime"
-            featured
+            featured={!isNight}
           />
           <QuickAction
             to="/room"
             icon={SlidersHorizontal}
             title="Room Control"
             subtitle="Cenas · clima · cortinas"
+            featured={isNight}
           />
           <QuickAction
             to="/gastronomy"
             icon={Wine}
             title="Gastronomia"
-            subtitle="Sabor do Porto Grande"
+            subtitle={isNight ? "Menu de jantar aberto" : "Sabor do Porto Grande"}
           />
           <QuickAction
             to="/concierge"
@@ -182,9 +204,9 @@ const Index = () => {
             to="/experiences"
             icon={MapPin}
             title="Explorar"
-            subtitle="Atividades em Mindelo"
+            subtitle={phase === "morning" ? "Tours desta manhã" : "Atividades em Mindelo"}
           />
-        </div>
+        </motion.div>
       </section>
 
       {/* White Glove Services & Music */}
@@ -261,7 +283,14 @@ const Index = () => {
         </div>
 
         <div className="space-y-3">
-          {bookedExperiences.map((item, idx) => (
+          {loading && (
+            <>
+              <ListItemSkeleton />
+              <ListItemSkeleton />
+              <ListItemSkeleton />
+            </>
+          )}
+          {!loading && bookedExperiences.map((item, idx) => (
              <div
              key={`booked-${idx}`}
              className="glass rounded-2xl p-4 flex items-center justify-between border-primary/40 shadow-glow"
@@ -275,13 +304,17 @@ const Index = () => {
              </span>
            </div>
           ))}
-          {[
+          {!loading && [
             { t: "Morna ao vivo", s: "Café Musique · 21:30", tag: "Cultura" },
             { t: "Jantar no Porto Grande", s: "Marina · 20:00", tag: "Gastronomia" },
             { t: "Pôr-do-sol no Monte Cara", s: "Mirante · 18:42", tag: "Natureza" },
-          ].map((item) => (
-            <div
+          ].map((item, idx) => (
+            <motion.div
               key={item.t}
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-40px" }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: idx * 0.06 }}
               className="glass rounded-2xl p-4 flex items-center justify-between hover:border-primary/30 transition-colors"
             >
               <div>
@@ -291,7 +324,7 @@ const Index = () => {
               <span className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border rounded-full px-2 py-1">
                 {item.tag}
               </span>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>
@@ -330,22 +363,30 @@ const QuickAction = ({
   subtitle: string;
   featured?: boolean;
 }) => (
-  <Link
-    to={to}
-    className={`glass rounded-2xl p-4 group hover:-translate-y-0.5 transition-all duration-300 ${
-      featured ? "border-primary/40 shadow-glow" : ""
-    }`}
+  <motion.div
+    variants={{
+      hidden: { opacity: 0, y: 14 },
+      show: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+    }}
+    whileTap={{ scale: 0.97 }}
   >
-    <div
-      className={`h-9 w-9 rounded-xl grid place-items-center mb-3 ${
-        featured ? "bg-gradient-primary text-primary-foreground" : "bg-muted text-primary"
+    <Link
+      to={to}
+      className={`block glass rounded-2xl p-4 group hover:-translate-y-0.5 transition-all duration-300 ${
+        featured ? "border-primary/40 shadow-glow" : ""
       }`}
     >
-      <Icon className="h-4 w-4" strokeWidth={1.75} />
-    </div>
-    <p className="font-medium text-sm">{title}</p>
-    <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
-  </Link>
+      <div
+        className={`h-9 w-9 rounded-xl grid place-items-center mb-3 ${
+          featured ? "bg-gradient-primary text-primary-foreground" : "bg-muted text-primary"
+        }`}
+      >
+        <Icon className="h-4 w-4" strokeWidth={1.75} />
+      </div>
+      <p className="font-medium text-sm">{title}</p>
+      <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>
+    </Link>
+  </motion.div>
 );
 
 export default Index;
