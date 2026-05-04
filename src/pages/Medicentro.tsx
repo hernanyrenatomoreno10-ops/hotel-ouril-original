@@ -6,6 +6,8 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { AppointmentSkeleton } from "@/components/Skeleton";
+import { FadeUp } from "@/components/Motion";
 
 const Medicentro = () => {
   const { user } = useAuth();
@@ -13,6 +15,7 @@ const Medicentro = () => {
   const [specialty, setSpecialty] = useState("Clínica Geral");
   const [loading, setLoading] = useState(false);
   const [appointments, setAppointments] = useState<any[]>([]);
+  const [loadingList, setLoadingList] = useState(false);
 
   useEffect(() => {
     if (activeTab === "history" && user) {
@@ -21,6 +24,7 @@ const Medicentro = () => {
   }, [activeTab, user]);
 
   const fetchAppointments = async () => {
+    setLoadingList(true);
     try {
       const { data, error } = await supabase
         .from('medical_appointments')
@@ -31,6 +35,8 @@ const Medicentro = () => {
       setAppointments(data || []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoadingList(false);
     }
   };
 
@@ -55,6 +61,8 @@ const Medicentro = () => {
 
       haptic("success");
       toast.success("Consulta confirmada com sucesso.");
+      // Notificar o extracto da Account em tempo real
+      window.dispatchEvent(new CustomEvent("mh:account-update"));
       setActiveTab("history");
     } catch (err: any) {
       toast.error(err.message || "Erro ao agendar.");
@@ -143,8 +151,13 @@ const Medicentro = () => {
             </button>
           </div>
         ) : (
-          <div className="space-y-4 pb-12 animate-fade-up">
-            {appointments.length === 0 ? (
+          <FadeUp className="space-y-4 pb-12">
+            {loadingList ? (
+              <>
+                <AppointmentSkeleton />
+                <AppointmentSkeleton />
+              </>
+            ) : appointments.length === 0 ? (
               <div className="text-center py-12 glass rounded-3xl">
                 <CalendarCheck className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">Não tem consultas agendadas.</p>
@@ -171,7 +184,7 @@ const Medicentro = () => {
                 </div>
               ))
             )}
-          </div>
+          </FadeUp>
         )}
       </div>
     </AppShell>
