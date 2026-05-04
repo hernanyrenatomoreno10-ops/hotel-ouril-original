@@ -217,6 +217,7 @@ const Concierge = () => {
                         status: 'confirmed'
                       }]);
                       import("sonner").then(({ toast }) => toast.success(`Reserva confirmada: ${m.actionData.title}`));
+                      window.dispatchEvent(new CustomEvent("mh:account-update"));
                       setMessages(msgs => [...msgs, { from: "ai", text: "Excelente! A sua reserva foi confirmada." }]);
                     }}
                     className="mt-4 w-full bg-gradient-primary text-primary-foreground py-2 rounded-full text-xs font-bold shadow-glow"
@@ -250,6 +251,7 @@ const Concierge = () => {
                           status: 'pending'
                         }]);
                         import("sonner").then(({ toast }) => toast.success(`Pedido enviado: ${m.actionData.item_name}`));
+                        window.dispatchEvent(new CustomEvent("mh:account-update"));
                         setMessages(msgs => [...msgs, { from: "ai", text: "O seu pedido foi enviado para a cozinha. O Room Service entregará em breve." }]);
                       }}
                       className="px-4 py-2 bg-foreground text-background rounded-full text-xs font-bold shadow-glow"

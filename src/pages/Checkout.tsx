@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, Check, ScanFace, FileText, CreditCard } from "lucide-react";
+import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles, Wine } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { haptic } from "@/lib/haptics";
+import { supabase } from "@/lib/supabase";
+import { FadeUp } from "@/components/Motion";
+import { Shimmer } from "@/components/Skeleton";
 
 const steps = [
   { icon: ScanFace, title: "Identidade", desc: "Validação biométrica segura" },
@@ -16,6 +19,62 @@ const Checkout = () => {
   const done = step >= steps.length;
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+
+  // Extracto vivo — Medicentro + Gastronomia + Experiências
+  const [extras, setExtras] = useState<{ label: string; price: number; icon: typeof Stethoscope }[]>([]);
+  const [loadingExtras, setLoadingExtras] = useState(true);
+
+  const fetchExtras = async () => {
+    setLoadingExtras(true);
+    try {
+      const [appts, gastro, exps] = await Promise.all([
+        supabase.from("medical_appointments").select("specialty,status").eq("status", "confirmed"),
+        supabase.from("gastronomy_orders").select("item_name,price"),
+        supabase.from("experience_reservations").select("title,status").eq("status", "confirmed"),
+      ]);
+
+      const PRICE_BY_SPECIALTY: Record<string, number> = {
+        "Clínica Geral": 65,
+        "Fisioterapia": 80,
+        "Nutrição": 70,
+        "Psicologia": 90,
+      };
+
+      const list: { label: string; price: number; icon: typeof Stethoscope }[] = [];
+      (appts.data || []).forEach((a: any) =>
+        list.push({ label: `Medicentro · ${a.specialty}`, price: PRICE_BY_SPECIALTY[a.specialty] ?? 60, icon: Stethoscope })
+      );
+      (gastro.data || []).forEach((g: any) =>
+        list.push({ label: `Gastronomia · ${g.item_name}`, price: Number(g.price) || 0, icon: Wine })
+      );
+      (exps.data || []).forEach((e: any) =>
+        list.push({ label: `Experiência · ${e.title}`, price: 45, icon: Sparkles })
+      );
+      setExtras(list);
+    } catch (err) {
+      console.warn("Extras indisponíveis:", err);
+    } finally {
+      setLoadingExtras(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExtras();
+    const onUpdate = () => fetchExtras();
+    window.addEventListener("mh:account-update", onUpdate);
+    return () => window.removeEventListener("mh:account-update", onUpdate);
+  }, []);
+
+  const baseRows = [
+    { l: "Suite Atlântica · 4 noites", v: 1240 },
+    { l: "Spa & Wellness", v: 180 },
+    { l: "Restaurante Marina", v: 96.5 },
+    { l: "Mini-bar", v: 42 },
+  ];
+  const extrasTotal = extras.reduce((acc, r) => acc + r.price, 0);
+  const grandTotal = baseRows.reduce((a, r) => a + r.v, 0) + extrasTotal;
+  const fmt = (n: number) =>
+    n.toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
 
   const userName = user?.email ? user.email.split('@')[0] : "Hóspede";
   const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
@@ -79,25 +138,45 @@ const Checkout = () => {
               )}
 
               {step === 1 && (
-                <div className="space-y-3">
-                  {[
-                    { l: "Suite Atlântica · 4 noites", v: "€1.240,00" },
-                    { l: "Spa & Wellness", v: "€180,00" },
-                    { l: "Restaurante Marina", v: "€96,50" },
-                    { l: "Mini-bar", v: "€42,00" },
-                  ].map((row) => (
-                    <div key={row.l} className="flex justify-between text-sm py-2 border-b border-border/40 last:border-0">
+                <FadeUp className="space-y-3">
+                  {baseRows.map((row) => (
+                    <div key={row.l} className="flex justify-between text-sm py-2 border-b border-border/40">
                       <span className="text-muted-foreground">{row.l}</span>
-                      <span className="font-medium">{row.v}</span>
+                      <span className="font-medium">{fmt(row.v)}</span>
                     </div>
                   ))}
+
+                  {/* Extras dinâmicos: Medicentro, Gastronomia, Experiências */}
+                  {loadingExtras ? (
+                    <div className="space-y-2 pt-1">
+                      <Shimmer className="h-5 w-full" />
+                      <Shimmer className="h-5 w-3/4" />
+                    </div>
+                  ) : extras.length > 0 ? (
+                    <div className="pt-2">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-primary mb-2">Adicionados durante a estadia</p>
+                      {extras.map((row, i) => {
+                        const Icon = row.icon;
+                        return (
+                          <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-border/40">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <Icon className="h-3.5 w-3.5 text-primary" />
+                              {row.label}
+                            </span>
+                            <span className="font-medium tabular-nums">{fmt(row.price)}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
+
                   <div className="flex justify-between pt-3 mt-2 border-t border-border">
                     <span className="font-display font-semibold">Total</span>
-                    <span className="font-display text-xl font-semibold bg-gradient-primary bg-clip-text text-transparent">
-                      €1.558,50
+                    <span className="font-display text-xl font-semibold bg-gradient-primary bg-clip-text text-transparent tabular-nums">
+                      {fmt(grandTotal)}
                     </span>
                   </div>
-                </div>
+                </FadeUp>
               )}
 
               {step === 2 && (
@@ -111,7 +190,7 @@ const Checkout = () => {
                     <p className="text-xs text-muted-foreground mt-2">{displayName} · 12/27</p>
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    Será cobrado €1.558,50 após confirmação.
+                    Será cobrado {fmt(grandTotal)} após confirmação.
                   </p>
                 </div>
               )}
