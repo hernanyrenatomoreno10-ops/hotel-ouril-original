@@ -108,6 +108,27 @@ All colors MUST be HSL.
 
 @layer components {
   .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-border/60;
+    @apply bg-card/55 backdrop-blur-2xl border border-white/[0.06] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)];
+  }
+  .glass-deep {
+    @apply bg-card/40 backdrop-blur-[28px] border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)];
+  }
+  /* Tipografia fluida — escala harmoniosa em qualquer ecrã */
+  .text-display-xl { font-size: clamp(2.25rem, 8vw, 3.25rem); line-height: 1.02; letter-spacing: -0.025em; }
+  .text-display-lg { font-size: clamp(1.75rem, 6vw, 2.25rem); line-height: 1.05; letter-spacing: -0.022em; }
+  .text-display-md { font-size: clamp(1.375rem, 4.5vw, 1.75rem); line-height: 1.1; letter-spacing: -0.02em; }
+  /* Tema contextual — overlays adaptativos por hora do dia */
+  .ctx-morning { --ctx-tint: 38 92% 60%; }
+  .ctx-day     { --ctx-tint: 199 89% 60%; }
+  .ctx-evening { --ctx-tint: 22 90% 58%; }
+  .ctx-night   { --ctx-tint: 240 60% 50%; }
+  .ctx-tint    { background: radial-gradient(60% 50% at 50% 0%, hsl(var(--ctx-tint) / 0.18), transparent 70%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
