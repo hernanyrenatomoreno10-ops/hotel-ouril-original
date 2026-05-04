@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/lib/supabase";
 
-type Msg = { from: "user" | "ai"; text: string };
+type Msg = { from: "user" | "ai"; text: string; actionType?: "gastronomy" | "experience"; actionData?: any };
 
 const suggestions = [
   "Onde ouvir Morna hoje?",
@@ -55,20 +55,49 @@ const Concierge = () => {
         parts: [{ text: `Você é o 'Soul', o concierge virtual de luxo do Mindelo Luxury Hub em São Vicente, Cabo Verde. O hóspede se chama ${userName}. Se o hóspede pedir algum serviço (como toalhas, comida, limpeza), use a ferramenta request_hotel_service para registrar o pedido. Fale português de Portugal de forma elegante.` }]
       };
 
-      const tools = [{
-        functionDeclarations: [{
-          name: "request_hotel_service",
-          description: "Cria um pedido de serviço físico para o hotel (toalhas, comida, limpeza, manutenção). Use sempre que o hóspede solicitar algo concreto.",
-          parameters: {
-            type: "OBJECT",
-            properties: {
-              service_type: { type: "STRING", description: "Categoria do serviço (ex: 'Housekeeping', 'Room Service')" },
-              description: { type: "STRING", description: "Descrição exata do pedido (ex: '2 toalhas extras')" }
+      const tools = [
+        {
+          functionDeclarations: [
+            {
+              name: "request_hotel_service",
+              description: "Cria um pedido de serviço físico para o hotel (toalhas, comida, limpeza, manutenção). Use sempre que o hóspede solicitar algo concreto.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  service_type: { type: "STRING", description: "Categoria do serviço (ex: 'Housekeeping', 'Room Service')" },
+                  description: { type: "STRING", description: "Descrição exata do pedido (ex: '2 toalhas extras')" }
+                },
+                required: ["service_type", "description"]
+              }
             },
-            required: ["service_type", "description"]
-          }
-        }]
-      }];
+            {
+              name: "suggest_gastronomy",
+              description: "Sugere um prato do menu do hotel. Use quando recomendar gastronomia, comida ou bebida.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  item_name: { type: "STRING", description: "Nome do prato ou bebida (ex: 'Polvo à Lagareiro')" },
+                  price: { type: "NUMBER", description: "Preço em euros (ex: 24)" },
+                  description: { type: "STRING", description: "Breve descrição deliciosa." }
+                },
+                required: ["item_name", "price", "description"]
+              }
+            },
+            {
+              name: "suggest_experience",
+              description: "Sugere uma experiência ou 'Hidden Gem' em Mindelo ou no hotel.",
+              parameters: {
+                type: "OBJECT",
+                properties: {
+                  title: { type: "STRING", description: "Título da experiência (ex: 'Mergulho na Baía das Gatas')" },
+                  place: { type: "STRING", description: "Localização (ex: 'Baía das Gatas')" }
+                },
+                required: ["title", "place"]
+              }
+            }
+          ]
+        }
+      ];
 
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
         method: "POST",
@@ -86,24 +115,42 @@ const Concierge = () => {
 
       const part = data.candidates[0].content.parts[0];
       
-      if (part.functionCall && part.functionCall.name === "request_hotel_service") {
-        const { service_type, description } = part.functionCall.args;
+      if (part.functionCall) {
+        const { name, args } = part.functionCall;
         
-        // Registrar no Supabase
-        const userId = user?.id || '00000000-0000-0000-0000-000000000000';
-        const { error } = await supabase.from('service_requests').insert([{
-          user_id: userId,
-          service_type,
-          description
-        }]);
-        
-        if (error) console.error("Erro no Supabase:", error);
-        
-        // Feedback Visual
-        import("sonner").then(({ toast }) => toast.success(`Pedido registado: ${service_type}`));
-        import("@/lib/haptics").then(({ haptic }) => haptic("success"));
-        
-        setMessages((m) => [...m, { from: "ai", text: `Com certeza. Já registei o seu pedido para "${description}". A nossa equipa entregará na sua suite em breve.` }]);
+        if (name === "request_hotel_service") {
+          const { service_type, description } = args;
+          
+          // Registrar no Supabase
+          const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+          const { error } = await supabase.from('service_requests').insert([{
+            user_id: userId,
+            service_type,
+            description
+          }]);
+          
+          if (error) console.error("Erro no Supabase:", error);
+          
+          // Feedback Visual
+          import("sonner").then(({ toast }) => toast.success(`Pedido registado: ${service_type}`));
+          import("@/lib/haptics").then(({ haptic }) => haptic("success"));
+          
+          setMessages((m) => [...m, { from: "ai", text: `Com certeza. Já registei o seu pedido para "${description}". A nossa equipa entregará na sua suite em breve.` }]);
+        } else if (name === "suggest_gastronomy") {
+          setMessages((m) => [...m, { 
+            from: "ai", 
+            text: `Aqui está a minha sugestão, especialmente para si:`,
+            actionType: "gastronomy",
+            actionData: args
+          }]);
+        } else if (name === "suggest_experience") {
+          setMessages((m) => [...m, { 
+            from: "ai", 
+            text: `Recomendo vivamente esta experiência local:`,
+            actionType: "experience",
+            actionData: args
+          }]);
+        }
       } else {
         const aiText = part.text;
         setMessages((m) => [...m, { from: "ai", text: aiText }]);
@@ -147,21 +194,69 @@ const Concierge = () => {
               >
                 {m.text}
               </div>
-              {m.from === "ai" && m.text.includes("Tito Paris") && (
+              {m.actionType === "experience" && m.actionData && (
                 <div className="mr-auto w-[85%] glass rounded-3xl p-4 animate-fade-up delay-300 border-primary/20">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-[10px] uppercase tracking-wider text-primary font-bold">Reserva Sugerida</p>
-                      <p className="font-display text-base font-semibold mt-1">Café Musique</p>
-                      <p className="text-xs text-muted-foreground">Mesa Varanda · 21:30</p>
+                      <p className="font-display text-base font-semibold mt-1">{m.actionData.title}</p>
+                      <p className="text-xs text-muted-foreground">{m.actionData.place}</p>
                     </div>
                     <div className="h-10 w-10 rounded-full bg-muted grid place-items-center">
                       <Sparkles className="h-4 w-4 text-primary" />
                     </div>
                   </div>
-                  <button className="mt-4 w-full bg-gradient-primary text-primary-foreground py-2 rounded-full text-xs font-bold shadow-glow">
-                    Confirmar Mesa
+                  <button 
+                    onClick={async () => {
+                      import("@/lib/haptics").then(({ haptic }) => haptic("success"));
+                      const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+                      await supabase.from('experience_reservations').insert([{
+                        user_id: userId,
+                        title: m.actionData.title,
+                        place: m.actionData.place,
+                        status: 'confirmed'
+                      }]);
+                      import("sonner").then(({ toast }) => toast.success(`Reserva confirmada: ${m.actionData.title}`));
+                      setMessages(msgs => [...msgs, { from: "ai", text: "Excelente! A sua reserva foi confirmada." }]);
+                    }}
+                    className="mt-4 w-full bg-gradient-primary text-primary-foreground py-2 rounded-full text-xs font-bold shadow-glow"
+                  >
+                    Confirmar Reserva
                   </button>
+                </div>
+              )}
+
+              {m.actionType === "gastronomy" && m.actionData && (
+                <div className="mr-auto w-[85%] glass rounded-3xl p-4 animate-fade-up delay-300 border-primary/20">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-primary font-bold">Sugestão do Chef</p>
+                      <p className="font-display text-base font-semibold mt-1">{m.actionData.item_name}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{m.actionData.description}</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center mt-4">
+                    <p className="font-display text-lg font-semibold bg-gradient-primary bg-clip-text text-transparent">
+                      €{m.actionData.price.toFixed(2)}
+                    </p>
+                    <button 
+                      onClick={async () => {
+                        import("@/lib/haptics").then(({ haptic }) => haptic("success"));
+                        const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+                        await supabase.from('gastronomy_orders').insert([{
+                          user_id: userId,
+                          item_name: m.actionData.item_name,
+                          price: m.actionData.price,
+                          status: 'pending'
+                        }]);
+                        import("sonner").then(({ toast }) => toast.success(`Pedido enviado: ${m.actionData.item_name}`));
+                        setMessages(msgs => [...msgs, { from: "ai", text: "O seu pedido foi enviado para a cozinha. O Room Service entregará em breve." }]);
+                      }}
+                      className="px-4 py-2 bg-foreground text-background rounded-full text-xs font-bold shadow-glow"
+                    >
+                      Pedir Agora
+                    </button>
+                  </div>
                 </div>
               )}
             </div>

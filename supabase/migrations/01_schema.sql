@@ -127,3 +127,31 @@ USING (auth.uid() = user_id);
 CREATE POLICY "Usuários podem criar pedidos de serviço" 
 ON service_requests FOR INSERT 
 WITH CHECK (auth.uid() = user_id);
+
+-- 6. Gastronomia (Menu e Pedidos)
+CREATE TABLE IF NOT EXISTS gastronomy_items (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT,
+  price NUMERIC NOT NULL,
+  category TEXT NOT NULL -- ex: 'Pratos Principais', 'Bebidas'
+);
+
+CREATE TABLE IF NOT EXISTS gastronomy_orders (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL,
+  item_name TEXT NOT NULL,
+  price NUMERIC NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE gastronomy_orders ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Usuários podem ver seus próprios pedidos de comida" 
+ON gastronomy_orders FOR SELECT 
+USING (auth.uid() = user_id);
+
+CREATE POLICY "Usuários podem criar pedidos de comida" 
+ON gastronomy_orders FOR INSERT 
+WITH CHECK (auth.uid() = user_id);
