@@ -20,9 +20,9 @@ All colors MUST be HSL.
     --popover: 222 47% 5%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 199 89% 60%;              /* sky-400/500 #38bdf8 */
+    --primary: 88 100% 55%;              /* Ouril neon lime */
     --primary-foreground: 222 47% 4%;
-    --primary-glow: 199 95% 74%;
+    --primary-glow: 96 95% 70%;
 
     --secondary: 215 28% 17%;            /* slate-800 */
     --secondary-foreground: 210 40% 98%;
@@ -30,7 +30,7 @@ All colors MUST be HSL.
     --muted: 217 33% 12%;
     --muted-foreground: 215 20% 65%;     /* slate #94a3b8 */
 
-    --accent: 199 89% 60%;
+    --accent: 88 100% 55%;
     --accent-foreground: 222 47% 4%;
 
     --destructive: 0 72% 51%;
@@ -38,14 +38,14 @@ All colors MUST be HSL.
 
     --border: 217 33% 14%;
     --input: 217 33% 14%;
-    --ring: 199 89% 60%;
+    --ring: 88 100% 55%;
 
     --radius: 1rem;
 
     --gradient-hero: linear-gradient(180deg, hsl(222 47% 4% / 0.2) 0%, hsl(222 47% 4% / 0.85) 70%, hsl(222 47% 4%) 100%);
-    --gradient-primary: linear-gradient(135deg, hsl(199 89% 60%), hsl(199 95% 74%));
+    --gradient-primary: linear-gradient(135deg, hsl(88 100% 55%), hsl(140 90% 55%));
     --gradient-card: linear-gradient(160deg, hsl(217 33% 10% / 0.8), hsl(222 47% 5% / 0.9));
-    --shadow-glow: 0 0 40px hsl(199 89% 60% / 0.35);
+    --shadow-glow: 0 0 40px hsl(88 100% 55% / 0.35);
     --shadow-elevated: 0 20px 50px -20px hsl(222 47% 0% / 0.7);
     --transition-smooth: cubic-bezier(0.22, 1, 0.36, 1);
 

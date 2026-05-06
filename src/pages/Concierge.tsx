@@ -8,10 +8,12 @@ import { supabase } from "@/lib/supabase";
 type Msg = { from: "user" | "ai"; text: string; actionType?: "gastronomy" | "experience"; actionData?: any };
 
 const suggestions = [
+  "Pedir menu do Ouril Bar",
+  "Agendar massagem no Ouril SPA",
+  "Reservar mesa no Ouril Restaurant",
+  "Pedir toalhas extras à suite",
+  "Acesso à piscina interior",
   "Onde ouvir Morna hoje?",
-  "Pedir toalhas extras",
-  "Reservar mesa para 2",
-  "Dicas culturais em Mindelo",
 ];
 
 const Concierge = () => {
