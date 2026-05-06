@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight, SlidersHorizontal, Stethoscope, type LucideIcon } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import LivingContext from "@/components/LivingContext";
-import heroImg from "@/assets/mindelo-hero.jpg";
+import heroImg from "@/assets/ouril-facade.webp";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/components/AuthProvider";
 import { useDayPhase, phaseClass, phaseGreeting } from "@/lib/context";
