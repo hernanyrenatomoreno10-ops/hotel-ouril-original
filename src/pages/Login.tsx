@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
-import heroImg from "@/assets/mindelo-hero.jpg";
+import heroImg from "@/assets/ouril-facade.webp";
 import { Waves } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
@@ -82,13 +82,14 @@ const Login = () => {
       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/90 to-transparent" />
 
       <div className="relative z-10 w-full px-8 pb-16 pt-10">
-        <div className="flex items-center gap-2 mb-10 animate-fade-up">
-          <div className="h-10 w-10 rounded-full bg-gradient-primary grid place-items-center shadow-glow">
-            <Waves className="h-5 w-5 text-primary-foreground" strokeWidth={2.25} />
+        <div className="flex items-center gap-3 mb-10 animate-fade-up">
+          <div className="relative h-12 w-12 rounded-full bg-background border border-primary/40 grid place-items-center shadow-glow">
+            <span className="absolute inset-0 rounded-full bg-primary/10 animate-pulse-glow" />
+            <span className="relative font-display text-lg font-bold bg-gradient-primary bg-clip-text text-transparent">Ø</span>
           </div>
           <div className="leading-tight">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-primary">Mindelo</p>
-            <p className="text-xl font-display font-semibold">Luxury Hub</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Ouril Hotels</p>
+            <p className="text-xl font-display font-semibold">Mindelo · Luxury Hub</p>
           </div>
         </div>
 
