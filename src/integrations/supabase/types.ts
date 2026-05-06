@@ -14,7 +14,369 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          check_in_date: string
+          check_out_date: string
+          created_at: string
+          hotel_id: string
+          hotel_name: string | null
+          id: string
+          nightly_rate: number | null
+          room_name: string | null
+          room_number: string | null
+          user_id: string
+        }
+        Insert: {
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string
+          hotel_id: string
+          hotel_name?: string | null
+          id?: string
+          nightly_rate?: number | null
+          room_name?: string | null
+          room_number?: string | null
+          user_id: string
+        }
+        Update: {
+          check_in_date?: string
+          check_out_date?: string
+          created_at?: string
+          hotel_id?: string
+          hotel_name?: string | null
+          id?: string
+          nightly_rate?: number | null
+          room_name?: string | null
+          room_number?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experience_reservations: {
+        Row: {
+          created_at: string
+          experience_id: string | null
+          hotel_id: string | null
+          id: string
+          place: string | null
+          price_eur: number | null
+          status: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_id?: string | null
+          hotel_id?: string | null
+          id?: string
+          place?: string | null
+          price_eur?: number | null
+          status?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_id?: string | null
+          hotel_id?: string | null
+          id?: string
+          place?: string | null
+          price_eur?: number | null
+          status?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experience_reservations_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "experiences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "experience_reservations_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      experiences: {
+        Row: {
+          created_at: string
+          hotel_id: string | null
+          id: string
+          image_url: string | null
+          is_internal: boolean | null
+          place: string
+          price_eur: number
+          rating: number | null
+          tag: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          hotel_id?: string | null
+          id?: string
+          image_url?: string | null
+          is_internal?: boolean | null
+          place: string
+          price_eur?: number
+          rating?: number | null
+          tag?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          hotel_id?: string | null
+          id?: string
+          image_url?: string | null
+          is_internal?: boolean | null
+          place?: string
+          price_eur?: number
+          rating?: number | null
+          tag?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "experiences_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastronomy_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          hotel_id: string | null
+          id: string
+          image_url: string | null
+          name: string
+          popular: boolean | null
+          price_cve: number
+          price_eur: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          hotel_id?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          popular?: boolean | null
+          price_cve: number
+          price_eur: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          hotel_id?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          popular?: boolean | null
+          price_cve?: number
+          price_eur?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastronomy_items_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gastronomy_orders: {
+        Row: {
+          created_at: string
+          hotel_id: string | null
+          id: string
+          item_id: string | null
+          item_name: string
+          price: number
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          hotel_id?: string | null
+          id?: string
+          item_id?: string | null
+          item_name: string
+          price: number
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          hotel_id?: string | null
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          price?: number
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gastronomy_orders_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gastronomy_orders_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "gastronomy_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotels: {
+        Row: {
+          brand_color: string | null
+          city: string
+          country: string
+          created_at: string
+          id: string
+          lat: number | null
+          lng: number | null
+          name: string
+          slug: string
+          tourist_tax_per_night: number | null
+        }
+        Insert: {
+          brand_color?: string | null
+          city: string
+          country?: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name: string
+          slug: string
+          tourist_tax_per_night?: number | null
+        }
+        Update: {
+          brand_color?: string | null
+          city?: string
+          country?: string
+          created_at?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          slug?: string
+          tourist_tax_per_night?: number | null
+        }
+        Relationships: []
+      }
+      medical_appointments: {
+        Row: {
+          appointment_date: string
+          created_at: string
+          id: string
+          specialty: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          appointment_date: string
+          created_at?: string
+          id?: string
+          specialty: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          appointment_date?: string
+          created_at?: string
+          id?: string
+          specialty?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      room_settings: {
+        Row: {
+          ac_power: boolean | null
+          blinds_level: number | null
+          created_at: string
+          id: string
+          lights_level: number | null
+          temperature: number | null
+          user_id: string
+        }
+        Insert: {
+          ac_power?: boolean | null
+          blinds_level?: number | null
+          created_at?: string
+          id?: string
+          lights_level?: number | null
+          temperature?: number | null
+          user_id: string
+        }
+        Update: {
+          ac_power?: boolean | null
+          blinds_level?: number | null
+          created_at?: string
+          id?: string
+          lights_level?: number | null
+          temperature?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      service_requests: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          service_type: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          service_type: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          service_type?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
