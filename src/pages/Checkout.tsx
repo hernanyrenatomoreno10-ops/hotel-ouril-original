@@ -170,6 +170,15 @@ const Checkout = () => {
                     </div>
                   ) : null}
 
+                  {/* Taxa turística obrigatória do município de Mindelo */}
+                  <div className="flex items-center justify-between text-sm py-2 border-b border-border/40">
+                    <span className="flex items-center gap-2 text-muted-foreground">
+                      <Landmark className="h-3.5 w-3.5 text-primary" />
+                      Taxa turística · {nights} × {fmt(touristTax?.perNight ?? 2.75)}
+                    </span>
+                    <span className="font-medium tabular-nums">{fmt(taxTotal)}</span>
+                  </div>
+
                   <div className="flex justify-between pt-3 mt-2 border-t border-border">
                     <span className="font-display font-semibold">Total</span>
                     <span className="font-display text-xl font-semibold bg-gradient-primary bg-clip-text text-transparent tabular-nums">
