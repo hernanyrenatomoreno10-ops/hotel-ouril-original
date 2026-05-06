@@ -4,7 +4,7 @@ import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight,
 import AppShell from "@/components/AppShell";
 import LivingContext from "@/components/LivingContext";
 import heroImg from "@/assets/ouril-facade.webp";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useDayPhase, phaseClass, phaseGreeting } from "@/lib/context";
 import { FadeUp } from "@/components/Motion";
@@ -31,33 +31,17 @@ const Index = () => {
 
   const fetchStayData = async () => {
     try {
-      // 1. Buscar experiências confirmadas do Supabase
-      const { data: exps, error: expError } = await supabase
-        .from('experience_reservations')
-        .select('*')
-        .eq('status', 'confirmed');
-      
-      if (expError) throw expError;
-      
-      // 2. Buscar reserva atual do hotel
-      const { data: bookings, error: bookError } = await supabase
-        .from('bookings')
-        .select('*')
-        .limit(1)
-        .single();
-        
-      if (exps) setBookedExperiences(exps);
-      if (bookings) setCurrentBooking(bookings);
-
-      // Fallback para LocalStorage se o Supabase estiver vazio (seed)
-      if (!exps || exps.length === 0) {
-        const local = JSON.parse(localStorage.getItem('booked_experiences') || '[]');
-        setBookedExperiences(local);
+      const [expsRes, bookRes] = await Promise.all([
+        supabase.from('experience_reservations').select('*').eq('status', 'confirmed'),
+        supabase.from('bookings').select('*, hotels(name)').limit(1).maybeSingle(),
+      ]);
+      if (expsRes.data) setBookedExperiences(expsRes.data);
+      if (bookRes.data) {
+        const b: any = bookRes.data;
+        setCurrentBooking({ ...b, hotel_name: b.hotels?.name });
       }
     } catch (err) {
-      console.warn("Usando dados locais:", err);
-      const local = JSON.parse(localStorage.getItem('booked_experiences') || '[]');
-      setBookedExperiences(local);
+      console.warn("Stay sem dados:", err);
     } finally {
       setLoading(false);
     }

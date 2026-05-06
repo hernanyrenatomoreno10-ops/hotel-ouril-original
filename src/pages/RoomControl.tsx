@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 type SceneId = "bom-dia" | "por-do-sol" | "cinema" | "eco-glow";
 
@@ -47,10 +47,9 @@ const RoomControl = () => {
     const syncTimeout = setTimeout(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        const userId = user?.id || '00000000-0000-0000-0000-000000000000';
-        
+        if (!user?.id) return;
         await supabase.from('room_settings').insert([{
-          user_id: userId,
+          user_id: user.id,
           temperature: temp[0],
           blinds_level: blinds[0],
           lights_level: lights[0],

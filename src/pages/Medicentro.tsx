@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { ArrowLeft, Stethoscope, Video, CalendarCheck, Clock, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
@@ -44,7 +44,11 @@ const Medicentro = () => {
     haptic("tap");
     setLoading(true);
     try {
-      const userId = user?.id || '00000000-0000-0000-0000-000000000000';
+      if (!user?.id) {
+        toast.error("Sessão expirada. Por favor entre novamente.");
+        return;
+      }
+      const userId = user.id;
       // Agendar para o dia seguinte as 10:00 (Mock para MVP)
       const date = new Date();
       date.setDate(date.getDate() + 1);

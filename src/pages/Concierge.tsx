@@ -3,7 +3,7 @@ import AppShell from "@/components/AppShell";
 import { ArrowLeft, Send, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { from: "user" | "ai"; text: string; actionType?: "gastronomy" | "experience"; actionData?: any };
 
@@ -19,6 +19,7 @@ const suggestions = [
 const Concierge = () => {
   const { user } = useAuth();
   const userName = user?.email ? user.email.split('@')[0] : "Hóspede";
+  const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
   const [messages, setMessages] = useState<Msg[]>([
     { from: "ai", text: `Boa noite, ${userName}. Sou o Soul, o seu olhar atento em Mindelo. Como posso elevar a sua estadia hoje?` },
   ]);
@@ -41,125 +42,40 @@ const Concierge = () => {
     setIsTyping(true);
 
     try {
-      const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-      
-      if (!apiKey) {
-        throw new Error("Chave VITE_GEMINI_API_KEY não configurada.");
-      }
-
       const history = newMessages.map(m => ({
-        role: m.from === "ai" ? "model" : "user",
-        parts: [{ text: m.text }]
+        role: m.from === "ai" ? "assistant" : "user",
+        content: m.text,
       }));
 
-      const systemInstruction = {
-        role: "user",
-        parts: [{ text: `Você é o 'Soul', o concierge virtual de luxo do Mindelo Luxury Hub em São Vicente, Cabo Verde. O hóspede se chama ${userName}. Se o hóspede pedir algum serviço (como toalhas, comida, limpeza), use a ferramenta request_hotel_service para registrar o pedido. Fale português de Portugal de forma elegante.` }]
-      };
-
-      const tools = [
-        {
-          functionDeclarations: [
-            {
-              name: "request_hotel_service",
-              description: "Cria um pedido de serviço físico para o hotel (toalhas, comida, limpeza, manutenção). Use sempre que o hóspede solicitar algo concreto.",
-              parameters: {
-                type: "OBJECT",
-                properties: {
-                  service_type: { type: "STRING", description: "Categoria do serviço (ex: 'Housekeeping', 'Room Service')" },
-                  description: { type: "STRING", description: "Descrição exata do pedido (ex: '2 toalhas extras')" }
-                },
-                required: ["service_type", "description"]
-              }
-            },
-            {
-              name: "suggest_gastronomy",
-              description: "Sugere um prato do menu do hotel. Use quando recomendar gastronomia, comida ou bebida.",
-              parameters: {
-                type: "OBJECT",
-                properties: {
-                  item_name: { type: "STRING", description: "Nome do prato ou bebida (ex: 'Polvo à Lagareiro')" },
-                  price: { type: "NUMBER", description: "Preço em euros (ex: 24)" },
-                  description: { type: "STRING", description: "Breve descrição deliciosa." }
-                },
-                required: ["item_name", "price", "description"]
-              }
-            },
-            {
-              name: "suggest_experience",
-              description: "Sugere uma experiência ou 'Hidden Gem' em Mindelo ou no hotel.",
-              parameters: {
-                type: "OBJECT",
-                properties: {
-                  title: { type: "STRING", description: "Título da experiência (ex: 'Mergulho na Baía das Gatas')" },
-                  place: { type: "STRING", description: "Localização (ex: 'Baía das Gatas')" }
-                },
-                required: ["title", "place"]
-              }
-            }
-          ]
-        }
-      ];
-
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [systemInstruction, ...history],
-          tools,
-          generationConfig: { temperature: 0.5, maxOutputTokens: 200 }
-        })
+      const { data, error } = await supabase.functions.invoke("soul-chat", {
+        body: { messages: history, userName: displayName },
       });
+      if (error) throw error;
 
-      const data = await response.json();
-      
-      if (data.error) throw new Error(data.error.message);
-
-      const part = data.candidates[0].content.parts[0];
-      
-      if (part.functionCall) {
-        const { name, args } = part.functionCall;
-        
+      if (data?.type === "tool") {
+        const { name, args } = data;
         if (name === "request_hotel_service") {
           const { service_type, description } = args;
-          
-          // Registrar no Supabase
-          const userId = user?.id || '00000000-0000-0000-0000-000000000000';
-          const { error } = await supabase.from('service_requests').insert([{
-            user_id: userId,
-            service_type,
-            description
-          }]);
-          
-          if (error) console.error("Erro no Supabase:", error);
-          
-          // Feedback Visual
+          if (user?.id) {
+            await supabase.from("service_requests").insert({
+              user_id: user.id, service_type, description,
+            });
+          }
           import("sonner").then(({ toast }) => toast.success(`Pedido registado: ${service_type}`));
           import("@/lib/haptics").then(({ haptic }) => haptic("success"));
-          
+          window.dispatchEvent(new CustomEvent("mh:account-update"));
           setMessages((m) => [...m, { from: "ai", text: `Com certeza. Já registei o seu pedido para "${description}". A nossa equipa entregará na sua suite em breve.` }]);
         } else if (name === "suggest_gastronomy") {
-          setMessages((m) => [...m, { 
-            from: "ai", 
-            text: `Aqui está a minha sugestão, especialmente para si:`,
-            actionType: "gastronomy",
-            actionData: args
-          }]);
+          setMessages((m) => [...m, { from: "ai", text: "Aqui está a minha sugestão do Ouril Restaurant:", actionType: "gastronomy", actionData: args }]);
         } else if (name === "suggest_experience") {
-          setMessages((m) => [...m, { 
-            from: "ai", 
-            text: `Recomendo vivamente esta experiência local:`,
-            actionType: "experience",
-            actionData: args
-          }]);
+          setMessages((m) => [...m, { from: "ai", text: "Recomendo vivamente esta experiência:", actionType: "experience", actionData: args }]);
         }
       } else {
-        const aiText = part.text;
-        setMessages((m) => [...m, { from: "ai", text: aiText }]);
+        setMessages((m) => [...m, { from: "ai", text: data?.text ?? "" }]);
       }
     } catch (err: any) {
       console.error(err);
-      setMessages((m) => [...m, { from: "ai", text: `[Modo Offline] ${err.message.includes('API_KEY') ? 'A API do Gemini não está configurada no .env' : 'Erro de conexão'}. Se eu estivesse online, faria isso de imediato.` }]);
+      setMessages((m) => [...m, { from: "ai", text: "O Monte Cara está nublado por agora — a equipa técnica já foi notificada. Tentemos novamente?" }]);
     } finally {
       setIsTyping(false);
     }
@@ -211,13 +127,14 @@ const Concierge = () => {
                   <button 
                     onClick={async () => {
                       import("@/lib/haptics").then(({ haptic }) => haptic("success"));
-                      const userId = user?.id || '00000000-0000-0000-0000-000000000000';
-                      await supabase.from('experience_reservations').insert([{
-                        user_id: userId,
-                        title: m.actionData.title,
-                        place: m.actionData.place,
-                        status: 'confirmed'
-                      }]);
+                      if (user?.id) {
+                        await supabase.from("experience_reservations").insert({
+                          user_id: user.id,
+                          title: m.actionData.title,
+                          place: m.actionData.place,
+                          status: "confirmed",
+                        });
+                      }
                       import("sonner").then(({ toast }) => toast.success(`Reserva confirmada: ${m.actionData.title}`));
                       window.dispatchEvent(new CustomEvent("mh:account-update"));
                       setMessages(msgs => [...msgs, { from: "ai", text: "Excelente! A sua reserva foi confirmada." }]);
@@ -245,13 +162,14 @@ const Concierge = () => {
                     <button 
                       onClick={async () => {
                         import("@/lib/haptics").then(({ haptic }) => haptic("success"));
-                        const userId = user?.id || '00000000-0000-0000-0000-000000000000';
-                        await supabase.from('gastronomy_orders').insert([{
-                          user_id: userId,
-                          item_name: m.actionData.item_name,
-                          price: m.actionData.price,
-                          status: 'pending'
-                        }]);
+                        if (user?.id) {
+                          await supabase.from("gastronomy_orders").insert({
+                            user_id: user.id,
+                            item_name: m.actionData.item_name,
+                            price: m.actionData.price,
+                            status: "pending",
+                          });
+                        }
                         import("sonner").then(({ toast }) => toast.success(`Pedido enviado: ${m.actionData.item_name}`));
                         window.dispatchEvent(new CustomEvent("mh:account-update"));
                         setMessages(msgs => [...msgs, { from: "ai", text: "O seu pedido foi enviado para a cozinha. O Room Service entregará em breve." }]);
