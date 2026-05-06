@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, Clock, MapPin, Star } from "lucide-react";
+import { ArrowLeft, Clock, MapPin, Star, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 import santo from "@/assets/experience-santoantao.jpg";
 import morna from "@/assets/experience-morna.jpg";
 import sailing from "@/assets/experience-sailing.jpg";
 import laginha from "@/assets/experience-laginha.jpg";
 
-const SEED_ITEMS = [
+const SEED_ITEMS: any[] = [
   {
     title: "Travessia para Santo Antão",
     place: "Porto Novo · dia inteiro",
@@ -46,6 +47,7 @@ const SEED_ITEMS = [
 ];
 
 const Experiences = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Tudo");
   const [reservingId, setReservingId] = useState<string | null>(null);
@@ -60,7 +62,19 @@ const Experiences = () => {
       const { data, error } = await supabase.from('experiences').select('*');
       if (error) throw error;
       if (data && data.length > 0) {
-        setDbItems(data);
+        // Internas do Ouril primeiro
+        const sorted = [...data].sort((a: any, b: any) => Number(b.is_internal) - Number(a.is_internal));
+        setDbItems(sorted.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          place: d.place,
+          price: `€${d.price_eur}`,
+          price_eur: Number(d.price_eur),
+          rating: Number(d.rating),
+          tag: d.tag,
+          img: d.image_url,
+          is_internal: d.is_internal,
+        })));
       } else {
         setDbItems(SEED_ITEMS);
       }
@@ -81,34 +95,30 @@ const Experiences = () => {
   const handleReserve = async (item: any) => {
     setReservingId(item.title);
     haptic("tap");
-    
+
+    if (!user?.id) {
+      toast.error("Sessão expirada. Por favor entre novamente.");
+      setReservingId(null);
+      return;
+    }
     try {
-      // Registrar no Supabase
-      const { error } = await supabase.from('experience_reservations').insert([
-        { 
-          experience_id: item.id || null, 
-          title: item.title,
-          place: item.place,
-          status: 'confirmed',
-          user_id: (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000000'
-        }
-      ]);
-
-      if (error) throw error;
-      
-      // Fallback para persistência local (ajuda na reatividade imediata)
-      const booked = JSON.parse(localStorage.getItem('booked_experiences') || '[]');
-      localStorage.setItem('booked_experiences', JSON.stringify([...booked, item]));
-      
-      window.dispatchEvent(new CustomEvent('supabase_webhook_experience_confirmed', { detail: item }));
-
-      haptic("success");
-      toast.success("Reserva confirmada no Supabase!", {
-        description: `${item.title} agendado. O Soul IA foi notificado.`,
+      const { error } = await supabase.from("experience_reservations").insert({
+        experience_id: item.id || null,
+        title: item.title,
+        place: item.place,
+        price_eur: item.price_eur ?? 45,
+        status: "confirmed",
+        user_id: user.id,
       });
-    } catch (err) {
-      console.error("Erro na reserva:", err);
-      toast.error("Erro ao processar reserva no servidor.");
+      if (error) throw error;
+      haptic("success");
+      toast.success(`${item.title} reservado.`, {
+        description: "O Soul Concierge foi notificado.",
+      });
+      window.dispatchEvent(new CustomEvent("mh:account-update"));
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Não conseguimos confirmar agora. Tentemos novamente?");
     } finally {
       setReservingId(null);
     }
@@ -186,6 +196,11 @@ const Experiences = () => {
                   <span className="absolute top-3 left-3 text-[10px] uppercase tracking-wider text-primary border border-primary/30 bg-background/40 backdrop-blur rounded-full px-2 py-1">
                     {it.tag}
                   </span>
+                  {it.is_internal && (
+                    <span className="absolute top-3 right-3 text-[10px] uppercase tracking-wider text-primary-foreground bg-primary/90 backdrop-blur rounded-full px-2 py-1 flex items-center gap-1">
+                      <Sparkles className="h-3 w-3" /> Ouril
+                    </span>
+                  )}
                 </div>
                 <div className="p-5 -mt-8 relative">
                   <h3 className="font-display text-xl font-semibold">{it.title}</h3>
