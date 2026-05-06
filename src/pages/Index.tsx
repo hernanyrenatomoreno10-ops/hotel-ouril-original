@@ -4,7 +4,7 @@ import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight,
 import AppShell from "@/components/AppShell";
 import LivingContext from "@/components/LivingContext";
 import heroImg from "@/assets/ouril-facade.webp";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { useDayPhase, phaseClass, phaseGreeting } from "@/lib/context";
 import { FadeUp } from "@/components/Motion";

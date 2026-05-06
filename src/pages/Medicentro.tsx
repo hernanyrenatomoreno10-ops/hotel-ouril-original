@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { ArrowLeft, Stethoscope, Video, CalendarCheck, Clock, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";

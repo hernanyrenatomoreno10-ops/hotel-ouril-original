@@ -3,7 +3,7 @@ import AppShell from "@/components/AppShell";
 import { ArrowLeft, Send, Sparkles, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { from: "user" | "ai"; text: string; actionType?: "gastronomy" | "experience"; actionData?: any };
 

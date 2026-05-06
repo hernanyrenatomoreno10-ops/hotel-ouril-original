@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 
 type SceneId = "bom-dia" | "por-do-sol" | "cinema" | "eco-glow";
 

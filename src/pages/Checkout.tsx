@@ -4,7 +4,7 @@ import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { haptic } from "@/lib/haptics";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { FadeUp } from "@/components/Motion";
 import { Shimmer } from "@/components/Skeleton";
 

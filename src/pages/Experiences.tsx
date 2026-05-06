@@ -4,7 +4,7 @@ import { ArrowLeft, Clock, MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import santo from "@/assets/experience-santoantao.jpg";
 import morna from "@/assets/experience-morna.jpg";
 import sailing from "@/assets/experience-sailing.jpg";
