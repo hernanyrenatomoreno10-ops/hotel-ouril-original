@@ -1,17 +1,17 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
 import heroImg from "@/assets/ouril-facade.webp";
-import { Waves } from "lucide-react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 
 const Login = () => {
-  const { user, mockLogin } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState(""); // Representará a Referência da Reserva
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [loading, setLoading] = useState(false);
 
   // Se já estiver logado, manda para a home
@@ -19,46 +19,23 @@ const Login = () => {
     return <Navigate to="/" replace />;
   }
 
-  const handleGuestLogin = () => {
-    haptic("success");
-    mockLogin();
-    toast.success("Modo Convidado ativo para testes");
-    navigate("/");
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     haptic("tap");
-    
-    // Tentamos fazer login. Se o usuário não existir (no contexto de protótipo de hotel), 
-    // podemos usar a função signUp auto-gerada para facilitar os testes, ou apenas signIn.
-    // Para um app real, o PMS do hotel já teria criado o usuário via API Admin.
-    // Aqui usaremos signUp como fallback para que o usuário consiga testar imediatamente.
-    
     try {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (signInError) {
-        // Fallback: se não encontrar (invalid credentials), tenta registrar (Mock do PMS do hotel)
-        if (signInError.message.includes("Invalid login credentials")) {
-          const { error: signUpError } = await supabase.auth.signUp({
-            email,
-            password,
-          });
-          
-          if (signUpError) throw signUpError;
-          
-          // Se registrou e logou
-          haptic("success");
-          toast.success("Bem-vindo ao Mindelo Luxury Hub.");
-        } else {
-          throw signInError;
-        }
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
+        if (error) throw error;
+        haptic("success");
+        toast.success("Conta criada. Bem-vindo ao Ouril Mindelo.");
       } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
         haptic("success");
         toast.success("Bem-vindo de volta.");
       }
@@ -100,7 +77,7 @@ const Login = () => {
           Insira o e-mail da reserva e a referência fornecida pela receção para aceder ao seu assistente de estadia.
         </p>
 
-        <form onSubmit={handleLogin} className="space-y-4 animate-fade-up [animation-delay:300ms]">
+        <form onSubmit={handleSubmit} className="space-y-4 animate-fade-up [animation-delay:300ms]">
           <div className="space-y-1">
             <label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-2">Email</label>
             <input
@@ -113,13 +90,14 @@ const Login = () => {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-2">Ref. Reserva (Password)</label>
+            <label className="text-[10px] uppercase tracking-wider text-muted-foreground ml-2">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Ex: MIN-412"
+              placeholder="••••••••"
               required
+              minLength={6}
               className="w-full bg-muted/40 border border-border/40 rounded-full px-5 py-4 text-sm outline-none focus:border-primary/50 transition-colors backdrop-blur-sm"
             />
           </div>
@@ -129,22 +107,17 @@ const Login = () => {
             disabled={loading}
             className="w-full mt-4 rounded-full bg-gradient-primary text-primary-foreground py-4 text-sm font-medium shadow-glow active:scale-[0.98] transition disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2"
           >
-            {loading ? "Autenticando..." : "Desbloquear Estadia"}
+            {loading ? "A processar..." : mode === "signup" ? "Criar conta Ouril" : "Desbloquear Estadia"}
           </button>
         </form>
 
         <div className="mt-6 flex flex-col items-center animate-fade-up [animation-delay:400ms]">
-          <div className="w-full flex items-center gap-4 mb-4 opacity-50">
-            <div className="h-px flex-1 bg-border"></div>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">ou</span>
-            <div className="h-px flex-1 bg-border"></div>
-          </div>
           <button
-            onClick={handleGuestLogin}
             type="button"
-            className="w-full rounded-full glass border border-primary/30 py-4 text-sm font-medium text-foreground hover:bg-primary/10 active:scale-[0.98] transition"
+            onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
+            className="text-xs text-muted-foreground hover:text-primary transition"
           >
-            Aceder como Convidado
+            {mode === "signin" ? "Primeira estadia? Criar conta Ouril" : "Já tem conta? Entrar"}
           </button>
         </div>
       </div>
