@@ -1,46 +1,60 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
 import { ArrowLeft, ShoppingBag, Star, Clock, Utensils } from "lucide-react";
 import { Link } from "react-router-dom";
 import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
-const MENU_ITEMS = [
-  {
-    id: 1,
-    name: "Lagosta Grelhada",
-    desc: "Lagosta fresca do Porto Grande com manteiga de ervas e arroz de coco.",
-    price: "€42",
-    img: "https://images.unsplash.com/photo-1559742811-82410b451b9b?q=80&w=800&auto=format&fit=crop",
-    popular: true,
-  },
-  {
-    id: 2,
-    name: "Carpaccio de Atum",
-    desc: "Atum rabilho com citrinos da ilha e pimenta da terra.",
-    price: "€18",
-    img: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop",
-    popular: false,
-  },
-  {
-    id: 3,
-    name: "Catchupa Rica Gourmet",
-    desc: "Nossa versão elevada do prato nacional, com enchidos artesanais.",
-    price: "€24",
-    img: "https://images.unsplash.com/photo-1512058560366-cd2427ff064f?q=80&w=800&auto=format&fit=crop",
-    popular: true,
-  },
-];
+type MenuItem = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  price_eur: number;
+  price_cve: number;
+  image_url: string | null;
+  popular: boolean | null;
+};
 
 const Gastronomy = () => {
-  const [cart, setCart] = useState<number[]>([]);
+  const { user } = useAuth();
+  const [items, setItems] = useState<MenuItem[]>([]);
+  const [cart, setCart] = useState<MenuItem[]>([]);
+  const [activeCat, setActiveCat] = useState("Destaques");
+  const [showCVE, setShowCVE] = useState(false);
 
-  const addToCart = (id: number, name: string) => {
-    setCart([...cart, id]);
-    haptic("success");
-    toast.success(`${name} adicionado ao pedido`, {
-      description: "Será entregue na Suite 412 em 30-40 min.",
+  useEffect(() => {
+    supabase.from("gastronomy_items").select("*").then(({ data }) => {
+      if (data) setItems(data as MenuItem[]);
     });
+  }, []);
+
+  const cats = ["Destaques", ...Array.from(new Set(items.map((i) => i.category || "Outros")))];
+  const visible = activeCat === "Destaques"
+    ? items.filter((i) => i.popular)
+    : items.filter((i) => (i.category || "Outros") === activeCat);
+
+  const formatPrice = (i: MenuItem) =>
+    showCVE ? `${Math.round(i.price_cve).toLocaleString("pt-PT")} CVE` : `€${i.price_eur}`;
+
+  const addToCart = async (item: MenuItem) => {
+    setCart((c) => [...c, item]);
+    haptic("success");
+    toast.success(`${item.name} adicionado ao pedido`, {
+      description: "Será entregue na sua suite em 30-40 min.",
+    });
+    if (user?.id) {
+      await supabase.from("gastronomy_orders").insert({
+        user_id: user.id,
+        item_id: item.id,
+        item_name: item.name,
+        price: item.price_eur,
+        status: "pending",
+      });
+      window.dispatchEvent(new CustomEvent("mh:account-update"));
+    }
   };
 
   return (
@@ -50,7 +64,12 @@ const Gastronomy = () => {
           <Link to="/" aria-label="Voltar" className="glass h-10 w-10 rounded-full grid place-items-center">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">In-Room Dining</p>
+          <button
+            onClick={() => { setShowCVE((v) => !v); haptic("tap"); }}
+            className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-primary transition"
+          >
+            {showCVE ? "CVE · tocar para €" : "EUR · tocar para CVE"}
+          </button>
           <div className="relative">
             <div className="glass h-10 w-10 rounded-full grid place-items-center">
               <ShoppingBag className="h-4 w-4" />
@@ -65,21 +84,22 @@ const Gastronomy = () => {
 
         <div className="mt-6">
           <h1 className="font-display text-3xl font-semibold leading-tight">
-            Sabor do <br />
-            <span className="bg-gradient-primary bg-clip-text text-transparent">Porto Grande</span>
+            Ouril <br />
+            <span className="bg-gradient-primary bg-clip-text text-transparent">Restaurant & Bar</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Alta gastronomia cabo-verdiana entregue com exclusividade no seu quarto.
+            Alta gastronomia cabo-verdiana, servida na suite ou no rooftop.
           </p>
         </div>
 
         {/* Categories */}
         <div className="flex gap-2 mt-6 overflow-x-auto -mx-6 px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {["Destaques", "Entradas", "Pratos Principais", "Vinhos", "Sobremesas"].map((c, i) => (
+          {cats.map((c) => (
             <button
               key={c}
+              onClick={() => { setActiveCat(c); haptic("tap"); }}
               className={`shrink-0 rounded-full px-4 py-2 text-xs font-medium transition ${
-                i === 0
+                activeCat === c
                   ? "bg-gradient-primary text-primary-foreground shadow-glow"
                   : "glass text-muted-foreground hover:text-foreground"
               }`}
@@ -91,12 +111,12 @@ const Gastronomy = () => {
 
         {/* Menu Items */}
         <div className="mt-8 space-y-6">
-          {MENU_ITEMS.map((item) => (
+          {visible.map((item) => (
             <div key={item.id} className="group relative">
               <div className="flex gap-4">
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-2xl border border-border/40">
                   <img
-                    src={item.img}
+                    src={item.image_url ?? "/placeholder.svg"}
                     alt={item.name}
                     className="h-full w-full object-cover transition-transform group-hover:scale-110"
                   />
@@ -109,16 +129,16 @@ const Gastronomy = () => {
                 <div className="flex-1">
                   <div className="flex justify-between items-start">
                     <h3 className="font-display text-lg font-semibold">{item.name}</h3>
-                    <span className="font-display font-bold text-primary">{item.price}</span>
+                    <span className="font-display font-bold text-primary tabular-nums">{formatPrice(item)}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.desc}</p>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{item.description}</p>
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> 35m</span>
                       <span className="flex items-center gap-1 text-primary"><Star className="h-3 w-3 fill-primary" /> 4.9</span>
                     </div>
                     <button
-                      onClick={() => addToCart(item.id, item.name)}
+                      onClick={() => addToCart(item)}
                       className="h-8 px-4 rounded-full bg-muted hover:bg-primary hover:text-primary-foreground text-xs font-bold transition-all active:scale-95"
                     >
                       Pedir
@@ -144,7 +164,9 @@ const Gastronomy = () => {
                   <p className="text-sm font-semibold">{cart.length} itens selecionados</p>
                 </div>
               </div>
-              <p className="font-display text-xl font-bold">€{cart.length * 28},00</p>
+              <p className="font-display text-xl font-bold tabular-nums">
+                €{cart.reduce((a, i) => a + Number(i.price_eur), 0).toFixed(2)}
+              </p>
             </button>
           </div>
         )}
