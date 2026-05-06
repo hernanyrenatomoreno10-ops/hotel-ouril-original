@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles, Wine } from "lucide-react";
+import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles, Wine, Landmark } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { haptic } from "@/lib/haptics";
@@ -22,15 +22,18 @@ const Checkout = () => {
 
   // Extracto vivo — Medicentro + Gastronomia + Experiências
   const [extras, setExtras] = useState<{ label: string; price: number; icon: typeof Stethoscope }[]>([]);
+  const [booking, setBooking] = useState<any>(null);
+  const [touristTax, setTouristTax] = useState<{ nights: number; perNight: number } | null>(null);
   const [loadingExtras, setLoadingExtras] = useState(true);
 
   const fetchExtras = async () => {
     setLoadingExtras(true);
     try {
-      const [appts, gastro, exps] = await Promise.all([
+      const [appts, gastro, exps, bk] = await Promise.all([
         supabase.from("medical_appointments").select("specialty,status").eq("status", "confirmed"),
         supabase.from("gastronomy_orders").select("item_name,price"),
-        supabase.from("experience_reservations").select("title,status").eq("status", "confirmed"),
+        supabase.from("experience_reservations").select("title,price_eur,status").eq("status", "confirmed"),
+        supabase.from("bookings").select("check_in_date,check_out_date,nightly_rate,hotels(tourist_tax_per_night,name)").limit(1).maybeSingle(),
       ]);
 
       const PRICE_BY_SPECIALTY: Record<string, number> = {
@@ -48,9 +51,18 @@ const Checkout = () => {
         list.push({ label: `Gastronomia · ${g.item_name}`, price: Number(g.price) || 0, icon: Wine })
       );
       (exps.data || []).forEach((e: any) =>
-        list.push({ label: `Experiência · ${e.title}`, price: 45, icon: Sparkles })
+        list.push({ label: `Experiência · ${e.title}`, price: Number(e.price_eur) || 45, icon: Sparkles })
       );
       setExtras(list);
+
+      if (bk.data) {
+        setBooking(bk.data);
+        const inD = new Date((bk.data as any).check_in_date);
+        const outD = new Date((bk.data as any).check_out_date);
+        const nights = Math.max(1, Math.round((+outD - +inD) / 86400000));
+        const perNight = Number((bk.data as any).hotels?.tourist_tax_per_night ?? 2.75);
+        setTouristTax({ nights, perNight });
+      }
     } catch (err) {
       console.warn("Extras indisponíveis:", err);
     } finally {
@@ -65,14 +77,14 @@ const Checkout = () => {
     return () => window.removeEventListener("mh:account-update", onUpdate);
   }, []);
 
+  const nights = touristTax?.nights ?? 4;
+  const nightly = Number(booking?.nightly_rate) || 310;
   const baseRows = [
-    { l: "Suite Atlântica · 4 noites", v: 1240 },
-    { l: "Spa & Wellness", v: 180 },
-    { l: "Restaurante Marina", v: 96.5 },
-    { l: "Mini-bar", v: 42 },
+    { l: `${booking?.room_name ?? "Suite Atlântica"} · ${nights} noites`, v: nights * nightly },
   ];
+  const taxTotal = touristTax ? touristTax.nights * touristTax.perNight : nights * 2.75;
   const extrasTotal = extras.reduce((acc, r) => acc + r.price, 0);
-  const grandTotal = baseRows.reduce((a, r) => a + r.v, 0) + extrasTotal;
+  const grandTotal = baseRows.reduce((a, r) => a + r.v, 0) + extrasTotal + taxTotal;
   const fmt = (n: number) =>
     n.toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
 
