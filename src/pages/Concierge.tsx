@@ -19,6 +19,7 @@ const suggestions = [
 const Concierge = () => {
   const { user } = useAuth();
   const userName = user?.email ? user.email.split('@')[0] : "Hóspede";
+  const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
   const [messages, setMessages] = useState<Msg[]>([
     { from: "ai", text: `Boa noite, ${userName}. Sou o Soul, o seu olhar atento em Mindelo. Como posso elevar a sua estadia hoje?` },
   ]);
