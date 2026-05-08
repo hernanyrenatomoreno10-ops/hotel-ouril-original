@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight, SlidersHorizontal, Stethoscope, BellOff, Brush, Phone, Droplets, Snowflake, Coffee } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import LivingContext from "@/components/LivingContext";
+import LiveOrders from "@/components/LiveOrders";
 import heroImg from "@/assets/ouril-facade.webp";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
@@ -44,14 +45,19 @@ const Index = () => {
     toast.success(mode === "dnd" ? "Não Incomodar activado" : "Pedido de arrumação enviado", { duration: 1800 });
   };
 
-  const expressOrder = async (label: string) => {
+  const expressOrder = async (label: string, price: number) => {
     haptic("success");
     if (user?.id) {
       await supabase.from("service_requests").insert({
-        user_id: user.id, service_type: "Room Service Express", description: label,
+        user_id: user.id,
+        service_type: "Room Service Express",
+        description: label,
+        price,
       });
     }
-    toast.success(`${label} a caminho da Suite ${roomNumber}`);
+    toast.success(`${label} a caminho da Suite ${roomNumber}`, {
+      description: price > 0 ? `+ ${price.toLocaleString("pt-PT", { style: "currency", currency: "EUR" })} na conta` : "Cortesia da casa",
+    });
     window.dispatchEvent(new CustomEvent("mh:account-update"));
   };
 
@@ -136,19 +142,23 @@ const Index = () => {
         <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3">Express · 1 toque</p>
         <div className="grid grid-cols-4 gap-2">
           {[
-            { l: "Água", icon: Droplets },
-            { l: "Toalhas", icon: Brush },
-            { l: "Gelo", icon: Snowflake },
-            { l: "Café", icon: Coffee },
+            { l: "Água", icon: Droplets, p: 3 },
+            { l: "Toalhas", icon: Brush, p: 0 },
+            { l: "Gelo", icon: Snowflake, p: 2 },
+            { l: "Café", icon: Coffee, p: 4 },
           ].map((it) => (
-            <button key={it.l} onClick={() => expressOrder(it.l)}
+            <button key={it.l} onClick={() => expressOrder(it.l, it.p)}
               className="glass rounded-2xl py-3 grid place-items-center gap-1 hover:border-primary/40 active:scale-95 transition-all">
               <it.icon className="h-4 w-4 text-primary" />
               <span className="text-[10px] font-medium">{it.l}</span>
+              <span className="text-[9px] text-muted-foreground">{it.p > 0 ? `€${it.p}` : "free"}</span>
             </button>
           ))}
         </div>
       </section>
+
+      {/* Painel ao vivo dos pedidos express + impacto na conta */}
+      <LiveOrders />
 
       {/* Privacy Mode — DND / Make Up */}
       <section className="px-6 mt-6">
