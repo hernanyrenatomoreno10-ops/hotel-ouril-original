@@ -354,7 +354,9 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          hotel_id: string | null
           id: string
+          price: number
           service_type: string
           status: string
           user_id: string
@@ -362,7 +364,9 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          hotel_id?: string | null
           id?: string
+          price?: number
           service_type: string
           status?: string
           user_id: string
@@ -370,7 +374,9 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          hotel_id?: string | null
           id?: string
+          price?: number
           service_type?: string
           status?: string
           user_id?: string
