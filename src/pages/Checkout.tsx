@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles, Wine, Landmark } from "lucide-react";
+import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles, Wine, Landmark, ConciergeBell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { haptic } from "@/lib/haptics";
@@ -29,10 +29,11 @@ const Checkout = () => {
   const fetchExtras = async () => {
     setLoadingExtras(true);
     try {
-      const [appts, gastro, exps, bk] = await Promise.all([
+      const [appts, gastro, exps, svc, bk] = await Promise.all([
         supabase.from("medical_appointments").select("specialty,status").eq("status", "confirmed"),
         supabase.from("gastronomy_orders").select("item_name,price"),
         supabase.from("experience_reservations").select("title,price_eur,status").eq("status", "confirmed"),
+        supabase.from("service_requests").select("description,service_type,price").gt("price", 0),
         supabase.from("bookings").select("check_in_date,check_out_date,nightly_rate,hotels(tourist_tax_per_night,name)").limit(1).maybeSingle(),
       ]);
 
@@ -52,6 +53,9 @@ const Checkout = () => {
       );
       (exps.data || []).forEach((e: any) =>
         list.push({ label: `Experiência · ${e.title}`, price: Number(e.price_eur) || 45, icon: Sparkles })
+      );
+      (svc.data || []).forEach((s: any) =>
+        list.push({ label: `Express · ${s.description ?? s.service_type}`, price: Number(s.price) || 0, icon: ConciergeBell })
       );
       setExtras(list);
 
