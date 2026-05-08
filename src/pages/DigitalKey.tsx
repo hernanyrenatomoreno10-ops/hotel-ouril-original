@@ -1,30 +1,70 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, KeyRound, ShieldCheck, Wifi, Loader2, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, KeyRound, ShieldCheck, Wifi, Loader2, CheckCircle2, Nfc } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type KeyState = "idle" | "activating" | "unlocked";
 
 const DigitalKey = () => {
   const [keyState, setKeyState] = useState<KeyState>("idle");
+  const [nfcMode, setNfcMode] = useState<"unsupported" | "ready" | "scanning">(
+    typeof window !== "undefined" && "NDEFReader" in window ? "ready" : "unsupported"
+  );
+  const abortRef = useRef<AbortController | null>(null);
 
-  const handleUnlock = () => {
+  const finalizeUnlock = () => {
+    haptic("success");
+    setKeyState("unlocked");
+    setTimeout(() => setKeyState("idle"), 3500);
+  };
+
+  const handleUnlock = async () => {
     if (keyState !== "idle") return;
-    
+
     haptic("tap");
     setKeyState("activating");
-    
-    // Simulate BLE/NFC handshake (Offline capable)
-    setTimeout(() => {
-      haptic("success");
-      setKeyState("unlocked");
-      
-      // Auto lock after 3.5s
-      setTimeout(() => setKeyState("idle"), 3500);
-    }, 1200);
+
+    // Tenta Web NFC real (Android Chrome) — caso contrário cai para handshake simulado
+    if ("NDEFReader" in window) {
+      try {
+        const ndef = new (window as any).NDEFReader();
+        const ctrl = new AbortController();
+        abortRef.current = ctrl;
+        setNfcMode("scanning");
+
+        // Timeout de leitura — 8s
+        const timeout = setTimeout(() => ctrl.abort(), 8000);
+
+        await ndef.scan({ signal: ctrl.signal });
+        ndef.onreading = () => {
+          clearTimeout(timeout);
+          ctrl.abort();
+          setNfcMode("ready");
+          finalizeUnlock();
+        };
+        ndef.onreadingerror = () => {
+          clearTimeout(timeout);
+          setNfcMode("ready");
+          setKeyState("idle");
+          toast.error("Não foi possível ler a fechadura. Tente novamente.");
+        };
+        return;
+      } catch (err: any) {
+        setNfcMode("ready");
+        if (err?.name === "NotAllowedError") {
+          toast.error("Permissão NFC negada. Autorize nas definições do telemóvel.");
+          setKeyState("idle");
+          return;
+        }
+        // Fallback silencioso para simulação
+      }
+    }
+
+    setTimeout(() => finalizeUnlock(), 1200);
   };
 
   return (
@@ -87,11 +127,13 @@ const DigitalKey = () => {
         <div className="mt-10 glass rounded-2xl p-4 grid grid-cols-2 gap-3">
           <div className="flex items-center gap-3">
             <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center">
-              <Wifi className="h-4 w-4 text-primary" />
+              {nfcMode === "unsupported" ? <Wifi className="h-4 w-4 text-primary" /> : <Nfc className="h-4 w-4 text-primary" />}
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Sinal</p>
-              <p className="text-sm font-medium">NFC + BLE</p>
+              <p className="text-sm font-medium">
+                {nfcMode === "unsupported" ? "BLE (NFC indisponível)" : nfcMode === "scanning" ? "A ler NFC…" : "NFC activo"}
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
