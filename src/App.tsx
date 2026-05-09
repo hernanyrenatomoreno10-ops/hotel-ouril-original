@@ -19,6 +19,7 @@ import Guide from "./pages/Guide.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import Medicentro from "./pages/Medicentro.tsx";
 import PreArrival from "./pages/PreArrival.tsx";
+import Wellness from "./pages/Wellness.tsx";
 import StaffRestaurant from "./pages/staff/StaffRestaurant.tsx";
 import StaffHousekeeping from "./pages/staff/StaffHousekeeping.tsx";
 import StaffAdmin from "./pages/staff/StaffAdmin.tsx";
@@ -27,20 +28,12 @@ const queryClient = new QueryClient();
 
 // Componente para proteger rotas. Se não estiver logado, redireciona pro /login
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
+  // Bypassing auth for development as requested
   return <>{children}</>;
 };
 
 const StaffRoute = ({ roles, children }: { roles: Array<"admin" | "restaurant" | "housekeeping">; children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  
-  const userRole = (user?.user_metadata as any)?.role;
-  if (!roles.includes(userRole)) return <Navigate to="/" replace />;
-  
+  // Bypassing role checks for development as requested
   return <>{children}</>;
 };
 
@@ -67,6 +60,7 @@ const App = () => (
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/medicentro" element={<ProtectedRoute><Medicentro /></ProtectedRoute>} />
             <Route path="/pre-arrival" element={<ProtectedRoute><PreArrival /></ProtectedRoute>} />
+            <Route path="/wellness" element={<ProtectedRoute><Wellness /></ProtectedRoute>} />
 
             <Route path="/staff/restaurant" element={<StaffRoute roles={["restaurant"]}><StaffRestaurant /></StaffRoute>} />
             <Route path="/staff/housekeeping" element={<StaffRoute roles={["housekeeping"]}><StaffHousekeeping /></StaffRoute>} />

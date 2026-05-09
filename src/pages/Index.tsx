@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight, SlidersHorizontal, Stethoscope, BellOff, Brush, Phone, Droplets, Snowflake, Coffee } from "lucide-react";
+import { Bell, KeyRound, Sparkles, Wine, Waves, Sun, Moon, MapPin, ArrowUpRight, SlidersHorizontal, Stethoscope, BellOff, Brush, Phone, Droplets, Snowflake, Coffee, Dumbbell } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import LivingContext from "@/components/LivingContext";
 import LiveOrders from "@/components/LiveOrders";
@@ -224,7 +224,7 @@ const Index = () => {
           <QuickAction to="/room" icon={SlidersHorizontal} title="Suite Control" subtitle="Luzes · cortinas · AC" />
           <QuickAction to="/guide" icon={MapPin} title="Serviços Ouril" subtitle="O que oferecemos" />
           <QuickAction to="/medicentro" icon={Stethoscope} title="Medicentro" subtitle="Saúde no quarto" />
-          <QuickAction to="/experiences" icon={Waves} title="Ouril SPA" subtitle="Massagens & piscina" />
+          <QuickAction to="/wellness" icon={Dumbbell} title="Wellness" subtitle="Ginásio & piscinas" />
           <QuickAction to="/checkout" icon={ArrowUpRight} title="Conta da Suite" subtitle="Extracto em tempo real" />
           <QuickAction to="/gastronomy" icon={Wine} title="Gastronomia" subtitle="Menu Ouril 24h" />
         </motion.div>
