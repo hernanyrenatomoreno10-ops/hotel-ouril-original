@@ -91,7 +91,7 @@ const DigitalKey = () => {
         <div className="mt-10 text-center">
           <p className="text-[10px] uppercase tracking-[0.25em] text-primary">Suite Atlântica</p>
           <h1 className="font-display text-5xl font-semibold mt-2">412</h1>
-          <p className="text-sm text-muted-foreground mt-2">Pestana Trópico · 4º andar</p>
+          <p className="text-sm text-muted-foreground mt-2">Ouril Mindelo · 4º andar</p>
         </div>
 
         {/* Ripple visual & Button */}

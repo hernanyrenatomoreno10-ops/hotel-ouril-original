@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Lightbulb,
   Fan,
-  Info
+  Info,
+  AlarmClock
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Slider } from "@/components/ui/slider";
@@ -41,6 +42,7 @@ const RoomControl = () => {
   const [dnd, setDnd] = useState(false);
   const [breakfast, setBreakfast] = useState(true);
   const [ecoMode, setEcoMode] = useState(false);
+  const [smartWakeup, setSmartWakeup] = useState(false);
 
   // Debounced Sync to Supabase
   useEffect(() => {
@@ -302,6 +304,21 @@ const RoomControl = () => {
             checked={breakfast}
             onCheckedChange={(v) => { setBreakfast(v); haptic("tap"); }}
           />
+          <ToggleRow
+            icon={AlarmClock}
+            title="Despertar Inteligente"
+            subtitle={smartWakeup ? "07:30 · Cortinas abrem suavemente + luz quente" : "Desativado · toque para ativar"}
+            checked={smartWakeup}
+            onCheckedChange={(v) => { 
+              setSmartWakeup(v); 
+              haptic(v ? "success" : "tap"); 
+              if (v) {
+                import("sonner").then(({ toast }) => toast.success("Despertar às 07:30 ativado", {
+                  description: "Cortinas abrirão a 30%, luz quente e AC ajustado a 23°C."
+                }));
+              }
+            }}
+          />
           <div className="flex items-center gap-4 p-5">
             <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center">
               <ShieldCheck className="h-4 w-4 text-primary" />
@@ -313,6 +330,47 @@ const RoomControl = () => {
             <span className="text-[10px] uppercase tracking-wider text-primary border border-primary/20 rounded-full px-2 py-1">
               Seguro
             </span>
+          </div>
+        </section>
+
+        {/* Menu de Conforto / Pillow Menu */}
+        <section className="mt-6 mb-8">
+          <h2 className="text-xs uppercase tracking-[0.2em] text-muted-foreground mb-3">Menu de Conforto</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Almofada Ortopédica", emoji: "🛏️" },
+              { label: "Almofada de Penas", emoji: "🪶" },
+              { label: "Edredom Extra", emoji: "☁️" },
+              { label: "Roupão & Chinelos", emoji: "👘" },
+              { label: "Kit de Barbear", emoji: "🪒" },
+              { label: "Toalhas Extra", emoji: "🧖" },
+            ].map((item) => (
+              <button
+                key={item.label}
+                onClick={async () => {
+                  haptic("success");
+                  try {
+                    const { data: { user: u } } = await supabase.auth.getUser();
+                    if (u?.id) {
+                      await supabase.from("service_requests").insert({
+                        user_id: u.id,
+                        service_type: "Conforto",
+                        description: item.label,
+                        room_number: "412",
+                      });
+                      window.dispatchEvent(new CustomEvent("mh:account-update"));
+                    }
+                  } catch (err) { console.warn(err); }
+                  import("sonner").then(({ toast }) => toast.success(`${item.label} solicitado`, {
+                    description: "A governanta entregará na sua suite em breve."
+                  }));
+                }}
+                className="glass rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-primary/40 transition-all active:scale-[0.97] border border-border/40"
+              >
+                <span className="text-2xl">{item.emoji}</span>
+                <span className="text-[11px] font-medium text-center leading-tight">{item.label}</span>
+              </button>
+            ))}
           </div>
         </section>
       </div>

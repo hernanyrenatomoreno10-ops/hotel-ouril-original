@@ -13,9 +13,11 @@ import { ReservationSkeleton } from "@/components/Skeleton";
 import { motion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
+import { useTheme } from "@/components/ThemeProvider";
 
 const Index = () => {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const phase = useDayPhase();
   const greeting = phaseGreeting(phase);
   const isNight = phase === "night" || phase === "evening";
@@ -82,10 +84,22 @@ const Index = () => {
                 <p className="text-sm font-display font-semibold">In-Suite Hub</p>
               </div>
             </div>
-            <Link to="/notifications" aria-label="Notificações" className="glass rounded-full h-10 w-10 grid place-items-center hover:border-primary/40 transition-colors relative">
-              <Bell className="h-4 w-4" strokeWidth={1.75} />
-              <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full animate-pulse border border-background"></span>
-            </Link>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => {
+                  haptic("tap");
+                  setTheme(theme === "dark" ? "light" : "dark");
+                }} 
+                className="glass rounded-full h-10 w-10 grid place-items-center hover:border-primary/40 transition-colors"
+              >
+                <Sun className="h-4 w-4 hidden dark:block text-primary" />
+                <Moon className="h-4 w-4 dark:hidden block text-primary" />
+              </button>
+              <Link to="/notifications" aria-label="Notificações" className="glass rounded-full h-10 w-10 grid place-items-center hover:border-primary/40 transition-colors relative">
+                <Bell className="h-4 w-4" strokeWidth={1.75} />
+                <span className="absolute top-2 right-2 h-2 w-2 bg-red-500 rounded-full animate-pulse border border-background"></span>
+              </Link>
+            </div>
           </div>
 
           <FadeUp className="mt-auto" delay={0.05}>
@@ -98,7 +112,7 @@ const Index = () => {
               <span className="bg-gradient-primary bg-clip-text text-transparent">{displayName}.</span>
             </h1>
             <p className="mt-3 max-w-sm text-sm text-muted-foreground">
-              Está em casa no Ouril. Tudo o que a sua estadia precisa, num só toque.
+              Tudo o que a sua estadia no Ouril precisa, ao alcance de um toque. Experiências exclusivas dentro do seu hotel.
             </p>
           </FadeUp>
 
@@ -132,8 +146,28 @@ const Index = () => {
         <div className="grid grid-cols-1 gap-3">
           <HeroAction to="/key" icon={KeyRound} title="Digital Key" subtitle={`Abrir porta · Suite ${roomNumber}`} pulse />
           <div className="grid grid-cols-2 gap-3">
-            <HeroAction to="/gastronomy" icon={Wine} title="Room Service" subtitle="Menu Ouril 24h" compact />
+            <HeroAction to="/room" icon={SlidersHorizontal} title="Ar Condicionado" subtitle="Controlo de clima" compact />
             <HeroAction to="/concierge" icon={Sparkles} title="Soul Chat" subtitle="Concierge IA" compact />
+          </div>
+        </div>
+      </section>
+
+      {/* Prato do Dia — Novo requisito */}
+      <section className="px-6 mt-7">
+        <div className="glass rounded-3xl overflow-hidden border-primary/20 bg-primary/5">
+          <div className="relative h-32 w-full overflow-hidden">
+            <img src="https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop" alt="Prato do dia" className="w-full h-full object-cover opacity-60" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+            <div className="absolute bottom-3 left-4">
+              <span className="text-[9px] uppercase tracking-widest text-primary font-bold bg-background/50 backdrop-blur-sm px-2 py-0.5 rounded-full">Prato do Dia</span>
+              <h3 className="font-display text-lg font-semibold mt-1">Cachupa Rica Ouril</h3>
+            </div>
+          </div>
+          <div className="p-4 flex items-center justify-between">
+            <p className="text-[11px] text-muted-foreground max-w-[180px]">O sabor tradicional de Cabo Verde com o toque do nosso Chef.</p>
+            <Link to="/gastronomy" className="h-9 px-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold grid place-items-center active:scale-95 transition shadow-glow">
+              Pedir €14.50
+            </Link>
           </div>
         </div>
       </section>
@@ -187,10 +221,12 @@ const Index = () => {
       <section className="px-6 mt-7">
         <motion.div className="grid grid-cols-2 gap-3" initial="hidden" animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }}>
-          <QuickAction to="/room" icon={SlidersHorizontal} title="Room Control" subtitle="Clima · cortinas · luz" />
+          <QuickAction to="/room" icon={SlidersHorizontal} title="Suite Control" subtitle="Luzes · cortinas · AC" />
+          <QuickAction to="/guide" icon={MapPin} title="Serviços Ouril" subtitle="O que oferecemos" />
           <QuickAction to="/medicentro" icon={Stethoscope} title="Medicentro" subtitle="Saúde no quarto" />
           <QuickAction to="/experiences" icon={Waves} title="Ouril SPA" subtitle="Massagens & piscina" />
           <QuickAction to="/checkout" icon={ArrowUpRight} title="Conta da Suite" subtitle="Extracto em tempo real" />
+          <QuickAction to="/gastronomy" icon={Wine} title="Gastronomia" subtitle="Menu Ouril 24h" />
         </motion.div>
       </section>
 

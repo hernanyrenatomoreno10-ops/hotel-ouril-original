@@ -11,9 +11,9 @@ const suggestions = [
   "Pedir menu do Ouril Bar",
   "Agendar massagem no Ouril SPA",
   "Reservar mesa no Ouril Restaurant",
-  "Pedir toalhas extras à suite",
+  "Agendar Transfer Aeroporto",
   "Acesso à piscina interior",
-  "Onde ouvir Morna hoje?",
+  "Eventos hoje no Ouril",
 ];
 
 const Concierge = () => {

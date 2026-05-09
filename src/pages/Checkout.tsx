@@ -238,8 +238,29 @@ const Checkout = () => {
               A sua fatura foi enviada por email. Mindelo aguarda o seu regresso.
             </p>
             <button
-              onClick={() => navigate("/login")}
-              className="inline-block mt-8 rounded-full glass px-6 py-3 text-sm hover:border-primary/40 transition"
+              onClick={async () => {
+                haptic("success");
+                try {
+                  const { data: { user: u } } = await supabase.auth.getUser();
+                  if (u?.id) {
+                    await supabase.from("service_requests").insert({
+                      user_id: u.id, service_type: "Bellboy",
+                      description: "Recolha de bagagem na suite para checkout",
+                      room_number: "412",
+                    });
+                  }
+                } catch {}
+                import("sonner").then(({ toast }) => toast.success("Bagageiro a caminho da sua suite", {
+                  description: "Chegará em aprox. 10 minutos."
+                }));
+              }}
+              className="inline-block mt-6 rounded-full bg-gradient-primary text-primary-foreground px-6 py-3 text-sm font-medium shadow-glow active:scale-[0.97] transition"
+            >
+              🧳 Pedir Bagageiro à Suite
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="inline-block mt-3 rounded-full glass px-6 py-3 text-sm hover:border-primary/40 transition"
             >
               Voltar ao início
             </button>
