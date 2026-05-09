@@ -13,36 +13,40 @@ import laginha from "@/assets/experience-laginha.jpg";
 
 const SEED_ITEMS: any[] = [
   {
-    title: "Travessia para Santo Antão",
-    place: "Porto Novo · dia inteiro",
-    price: "€185",
+    title: "Sunset na Piscina Infinita",
+    place: "Rooftop · 18:00",
+    price: "€25",
     rating: 4.9,
-    tag: "Mais procurada",
-    img: santo,
+    tag: "Exclusivo",
+    img: "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1024",
+    is_internal: true
   },
   {
-    title: "Jantar com Morna ao vivo",
-    place: "Café Musique · 20h",
-    price: "€72",
+    title: "Ritual SPA Ouril Relax",
+    place: "Ouril SPA · 90min",
+    price: "€85",
     rating: 4.8,
-    tag: "Cultura",
-    img: morna,
+    tag: "Bem-estar",
+    img: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&q=80&w=1024",
+    is_internal: true
   },
   {
-    title: "Aluguer privado de veleiro",
-    place: "Marina Mindelo · 4h",
-    price: "€420",
+    title: "Degustação Vinhos do Fogo",
+    place: "Restaurante Américos · 19:30",
+    price: "€45",
     rating: 5.0,
-    tag: "Premium",
-    img: sailing,
+    tag: "Gastronomia",
+    img: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?auto=format&fit=crop&q=80&w=1024",
+    is_internal: true
   },
   {
-    title: "Sunset na Praia da Laginha",
-    place: "Bar Praiamar · 18h",
-    price: "€38",
+    title: "Yoga Matinal no Pátio",
+    place: "Pátio Central · 08:00",
+    price: "€15",
     rating: 4.7,
-    tag: "Sunset",
-    img: laginha,
+    tag: "Saúde",
+    img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&q=80&w=1024",
+    is_internal: true
   },
 ];
 

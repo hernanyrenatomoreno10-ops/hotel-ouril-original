@@ -7,8 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 const PreArrival = () => {
+  const { user } = useAuth();
+  const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const [temp, setTemp] = useState<number[]>([22]);
   const [champagne, setChampagne] = useState(false);
   const [flowers, setFlowers] = useState(false);
@@ -29,7 +32,7 @@ const PreArrival = () => {
           user_id: user.id,
           service_type: "Pre-Arrival",
           description: `Temp: ${temp[0]}°C. Extras: ${extras || "Nenhum"}`,
-          room_number: "412",
+          room_number: roomNumber,
         });
       }
     } catch {}

@@ -28,6 +28,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
 
 type SceneId = "bom-dia" | "por-do-sol" | "cinema" | "eco-glow";
 
@@ -39,6 +40,8 @@ const SCENES: { id: SceneId; label: string; icon: typeof Sun; hint: string }[] =
 ];
 
 const RoomControl = () => {
+  const { user } = useAuth();
+  const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const [scene, setScene] = useState<SceneId>("por-do-sol");
   const [temp, setTemp] = useState<number[]>([22]);
   const [blinds, setBlinds] = useState<number[]>([50]);
@@ -120,7 +123,7 @@ const RoomControl = () => {
             <Link to="/" aria-label="Voltar" className="glass h-10 w-10 rounded-full grid place-items-center">
               <ArrowLeft className="h-4 w-4" />
             </Link>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Suite 412</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Suite {roomNumber}</p>
             <div className="h-10 w-10" />
           </div>
 
@@ -363,7 +366,7 @@ const RoomControl = () => {
                         user_id: u.id,
                         service_type: "Conforto",
                         description: item.label,
-                        room_number: "412",
+                        room_number: roomNumber,
                       });
                       window.dispatchEvent(new CustomEvent("mh:account-update"));
                     }

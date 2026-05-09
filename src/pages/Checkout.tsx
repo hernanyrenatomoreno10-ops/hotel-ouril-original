@@ -18,6 +18,7 @@ const Checkout = () => {
   const [step, setStep] = useState(0);
   const done = step >= steps.length;
   const { user, signOut } = useAuth();
+  const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const navigate = useNavigate();
 
   // Extracto vivo — Medicentro + Gastronomia + Experiências
@@ -246,7 +247,7 @@ const Checkout = () => {
                     await supabase.from("service_requests").insert({
                       user_id: u.id, service_type: "Bellboy",
                       description: "Recolha de bagagem na suite para checkout",
-                      room_number: "412",
+                      room_number: roomNumber,
                     });
                   }
                 } catch {}

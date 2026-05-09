@@ -3,11 +3,11 @@ import { Home, KeyRound, Sparkles, Compass, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const items = [
-  { to: "/", label: "Stay", icon: Home },
-  { to: "/key", label: "Key", icon: KeyRound },
+  { to: "/", label: "Estadia", icon: Home },
+  { to: "/key", label: "Chave", icon: KeyRound },
   { to: "/concierge", label: "Soul", icon: Sparkles },
-  { to: "/experiences", label: "Explore", icon: Compass },
-  { to: "/checkout", label: "Account", icon: User },
+  { to: "/experiences", label: "Explorar", icon: Compass },
+  { to: "/checkout", label: "Conta", icon: User },
 ];
 
 export const BottomNav = () => {

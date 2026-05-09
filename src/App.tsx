@@ -27,12 +27,20 @@ const queryClient = new QueryClient();
 
 // Componente para proteger rotas. Se não estiver logado, redireciona pro /login
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  // Bypassing auth for development
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
 
 const StaffRoute = ({ roles, children }: { roles: Array<"admin" | "restaurant" | "housekeeping">; children: React.ReactNode }) => {
-  // Bypassing role checks for development
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  
+  const userRole = (user?.user_metadata as any)?.role;
+  if (!roles.includes(userRole)) return <Navigate to="/" replace />;
+  
   return <>{children}</>;
 };
 
