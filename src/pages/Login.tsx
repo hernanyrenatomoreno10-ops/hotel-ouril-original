@@ -5,6 +5,7 @@ import { haptic } from "@/lib/haptics";
 import heroImg from "@/assets/ouril-facade.webp";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
+import { Link } from "react-router-dom";
 import { KeyRound, DoorOpen } from "lucide-react";
 
 const Login = () => {
@@ -166,6 +167,11 @@ const Login = () => {
         <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
           Acesso temporário · apenas durante o desenvolvimento
         </p>
+
+        <Link to="/staff/admin"
+          className="mt-6 block text-center text-[10px] uppercase tracking-[0.3em] text-muted-foreground hover:text-primary transition">
+          Acesso Staff · Back-office
+        </Link>
       </div>
     </div>
   );

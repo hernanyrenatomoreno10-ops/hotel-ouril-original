@@ -17,6 +17,9 @@ import Login from "./pages/Login.tsx";
 import Guide from "./pages/Guide.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import Medicentro from "./pages/Medicentro.tsx";
+import StaffRestaurant from "./pages/staff/StaffRestaurant.tsx";
+import StaffHousekeeping from "./pages/staff/StaffHousekeeping.tsx";
+import StaffAdmin from "./pages/staff/StaffAdmin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +31,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!user) return <Navigate to="/login" replace />;
   
   return children;
+};
+
+const StaffRoute = ({ roles, children }: { roles: Array<"admin" | "restaurant" | "housekeeping">; children: React.ReactNode }) => {
+  const { user, loading, hasRole } = useAuth();
+  if (loading) return <div className="min-h-screen bg-background" />;
+  if (!user) return <Navigate to="/login" replace />;
+  const ok = roles.some((r) => hasRole(r)) || hasRole("admin");
+  if (!ok) return <Navigate to="/" replace />;
+  return <>{children}</>;
 };
 
 const App = () => (
@@ -51,6 +63,10 @@ const App = () => (
             <Route path="/gastronomy" element={<ProtectedRoute><Gastronomy /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/medicentro" element={<ProtectedRoute><Medicentro /></ProtectedRoute>} />
+
+            <Route path="/staff/restaurant" element={<StaffRoute roles={["restaurant"]}><StaffRestaurant /></StaffRoute>} />
+            <Route path="/staff/housekeeping" element={<StaffRoute roles={["housekeeping"]}><StaffHousekeeping /></StaffRoute>} />
+            <Route path="/staff/admin" element={<StaffRoute roles={["admin"]}><StaffAdmin /></StaffRoute>} />
             
             <Route path="*" element={<NotFound />} />
             </Routes>
