@@ -61,6 +61,33 @@ export type Database = {
           },
         ]
       }
+      door_access_logs: {
+        Row: {
+          created_at: string
+          id: string
+          method: string
+          room_number: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          method?: string
+          room_number?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          method?: string
+          room_number?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       experience_reservations: {
         Row: {
           created_at: string
@@ -161,6 +188,7 @@ export type Database = {
       }
       gastronomy_items: {
         Row: {
+          available: boolean
           category: string | null
           created_at: string
           description: string | null
@@ -171,8 +199,10 @@ export type Database = {
           popular: boolean | null
           price_cve: number
           price_eur: number
+          updated_at: string
         }
         Insert: {
+          available?: boolean
           category?: string | null
           created_at?: string
           description?: string | null
@@ -183,8 +213,10 @@ export type Database = {
           popular?: boolean | null
           price_cve: number
           price_eur: number
+          updated_at?: string
         }
         Update: {
+          available?: boolean
           category?: string | null
           created_at?: string
           description?: string | null
@@ -195,6 +227,7 @@ export type Database = {
           popular?: boolean | null
           price_cve?: number
           price_eur?: number
+          updated_at?: string
         }
         Relationships: [
           {
@@ -214,7 +247,9 @@ export type Database = {
           item_id: string | null
           item_name: string
           price: number
+          room_number: string | null
           status: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -224,7 +259,9 @@ export type Database = {
           item_id?: string | null
           item_name: string
           price: number
+          room_number?: string | null
           status?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -234,7 +271,9 @@ export type Database = {
           item_id?: string | null
           item_name?: string
           price?: number
+          room_number?: string | null
           status?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -357,8 +396,10 @@ export type Database = {
           hotel_id: string | null
           id: string
           price: number
+          room_number: string | null
           service_type: string
           status: string
+          updated_at: string
           user_id: string
         }
         Insert: {
@@ -367,8 +408,10 @@ export type Database = {
           hotel_id?: string | null
           id?: string
           price?: number
+          room_number?: string | null
           service_type: string
           status?: string
+          updated_at?: string
           user_id: string
         }
         Update: {
@@ -377,8 +420,31 @@ export type Database = {
           hotel_id?: string | null
           id?: string
           price?: number
+          room_number?: string | null
           service_type?: string
           status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
         }
         Relationships: []
@@ -388,10 +454,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "restaurant" | "housekeeping" | "guest"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -518,6 +590,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "restaurant", "housekeeping", "guest"],
+    },
   },
 } as const
