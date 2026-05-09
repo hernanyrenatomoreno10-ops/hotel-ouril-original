@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import AppShell from "@/components/AppShell";
-import { ArrowLeft, Send, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, Sparkles, Loader2, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,13 +16,22 @@ const suggestions = [
   "Eventos hoje no Ouril",
 ];
 
+const LANGUAGES = [
+  { code: "pt", label: "PT", greeting: "Boa noite", placeholder: "Pergunte ao Soul..." },
+  { code: "en", label: "EN", greeting: "Good evening", placeholder: "Ask Soul anything..." },
+  { code: "fr", label: "FR", greeting: "Bonsoir", placeholder: "Demandez à Soul..." },
+  { code: "de", label: "DE", greeting: "Guten Abend", placeholder: "Fragen Sie Soul..." },
+  { code: "es", label: "ES", greeting: "Buenas noches", placeholder: "Pregunta a Soul..." },
+];
+
 const Concierge = () => {
   const { user } = useAuth();
   const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const displayName = `Suite ${roomNumber}`;
   const userName = displayName;
+  const [lang, setLang] = useState(LANGUAGES[0]);
   const [messages, setMessages] = useState<Msg[]>([
-    { from: "ai", text: `Boa noite, ${userName}. Sou o Soul, o seu olhar atento em Mindelo. Como posso elevar a sua estadia hoje?` },
+    { from: "ai", text: `${LANGUAGES[0].greeting}, ${userName}. Sou o Soul, o seu concierge digital no Ouril Mindelo. Como posso ajudar?` },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -98,7 +107,23 @@ const Concierge = () => {
               <p className="text-[10px] text-muted-foreground">Concierge IA · Online</p>
             </div>
           </div>
-          <div className="h-10 w-10" />
+          <div className="flex gap-1 bg-muted/40 p-0.5 rounded-full border border-border/40">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => {
+                  setLang(l);
+                  import("@/lib/haptics").then(({ haptic }) => haptic("tap"));
+                  setMessages(m => [...m, { from: "ai", text: `${l.greeting}! Agora estou a responder em ${l.label}. Como posso ajudar?` }]);
+                }}
+                className={`px-2 py-1 rounded-full text-[10px] font-bold transition ${
+                  lang.code === l.code ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {l.label}
+              </button>
+            ))}
+          </div>
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto px-6 mt-6 space-y-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -215,7 +240,7 @@ const Concierge = () => {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Pergunte ao Soul..."
+              placeholder={lang.placeholder}
               className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground"
             />
             <button

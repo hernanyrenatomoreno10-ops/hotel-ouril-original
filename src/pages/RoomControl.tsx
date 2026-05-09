@@ -14,7 +14,12 @@ import {
   Lightbulb,
   Fan,
   Info,
-  AlarmClock
+  AlarmClock,
+  Tv,
+  Cast,
+  Wifi,
+  SprayCan,
+  Clock
 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Slider } from "@/components/ui/slider";
@@ -43,6 +48,8 @@ const RoomControl = () => {
   const [breakfast, setBreakfast] = useState(true);
   const [ecoMode, setEcoMode] = useState(false);
   const [smartWakeup, setSmartWakeup] = useState(false);
+  const [tvCast, setTvCast] = useState(false);
+  const [cleaningStatus, setCleaningStatus] = useState<"idle" | "requested" | "in-progress" | "done">("idle");
 
   // Debounced Sync to Supabase
   useEffect(() => {
@@ -372,6 +379,132 @@ const RoomControl = () => {
               </button>
             ))}
           </div>
+        </section>
+
+        {/* Feature 4: TV Casting */}
+        <section className="mt-6 glass rounded-3xl p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "h-9 w-9 rounded-xl grid place-items-center transition-colors",
+                tvCast ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+              )}>
+                <Cast className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Entretenimento</p>
+                <p className="text-sm font-medium">Transmitir para Smart TV</p>
+              </div>
+            </div>
+            <Switch checked={tvCast} onCheckedChange={(v) => {
+              setTvCast(v);
+              haptic(v ? "success" : "tap");
+              if (v) {
+                import("sonner").then(({ toast }) => toast.success("TV emparelhada", {
+                  description: "Agora pode enviar YouTube, Spotify ou Netflix do telemóvel."
+                }));
+              }
+            }} />
+          </div>
+          {tvCast && (
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              {[
+                { name: "Netflix", icon: "🎬" },
+                { name: "YouTube", icon: "▶️" },
+                { name: "Spotify", icon: "🎵" },
+              ].map((app) => (
+                <button
+                  key={app.name}
+                  onClick={() => {
+                    haptic("tap");
+                    import("sonner").then(({ toast }) => toast.info(`${app.name} a abrir na TV do quarto...`));
+                  }}
+                  className="glass rounded-xl p-3 flex flex-col items-center gap-1 hover:border-primary/40 transition active:scale-[0.97]"
+                >
+                  <span className="text-xl">{app.icon}</span>
+                  <span className="text-[10px] font-medium">{app.name}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* Feature 5: Housekeeping Tracking */}
+        <section className="mt-6 mb-8 glass rounded-3xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-muted grid place-items-center">
+                <SprayCan className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Housekeeping</p>
+                <p className="text-sm font-medium">Limpeza da Suite</p>
+              </div>
+            </div>
+            {cleaningStatus === "idle" && (
+              <button
+                onClick={async () => {
+                  setCleaningStatus("requested");
+                  haptic("success");
+                  import("sonner").then(({ toast }) => toast.success("Limpeza solicitada"));
+                  try {
+                    const { data: { user: u } } = await supabase.auth.getUser();
+                    if (u?.id) {
+                      await supabase.from("service_requests").insert({
+                        user_id: u.id, service_type: "Housekeeping",
+                        description: "Limpeza completa da suite", room_number: "412",
+                      });
+                    }
+                  } catch {}
+                  // Simular progresso
+                  setTimeout(() => setCleaningStatus("in-progress"), 5000);
+                  setTimeout(() => {
+                    setCleaningStatus("done");
+                    import("sonner").then(({ toast }) => toast.success("A sua suite está impecável e pronta."));
+                    haptic("success");
+                  }, 15000);
+                }}
+                className="px-4 py-2 rounded-full bg-gradient-primary text-primary-foreground text-xs font-bold shadow-glow active:scale-[0.97] transition"
+              >
+                Pedir Limpeza
+              </button>
+            )}
+          </div>
+          {/* Progress steps */}
+          <div className="flex items-center gap-2">
+            {[
+              { label: "Solicitado", key: "requested" },
+              { label: "Em curso", key: "in-progress" },
+              { label: "Pronta", key: "done" },
+            ].map((s, i) => {
+              const states = ["requested", "in-progress", "done"];
+              const currentIdx = states.indexOf(cleaningStatus);
+              const stepIdx = states.indexOf(s.key);
+              const isActive = cleaningStatus !== "idle" && stepIdx <= currentIdx;
+              const isCurrent = s.key === cleaningStatus;
+              return (
+                <div key={s.key} className="flex-1 flex flex-col items-center gap-1.5">
+                  <div className={cn(
+                    "h-3 w-full rounded-full transition-all duration-700",
+                    isActive ? "bg-gradient-primary" : "bg-muted",
+                    isCurrent && "animate-pulse"
+                  )} />
+                  <span className={cn(
+                    "text-[10px] font-medium transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}>{s.label}</span>
+                </div>
+              );
+            })}
+          </div>
+          {cleaningStatus !== "idle" && cleaningStatus !== "done" && (
+            <p className="text-[11px] text-muted-foreground text-center mt-3 flex items-center justify-center gap-1">
+              <Clock className="h-3 w-3" /> Tempo estimado: {cleaningStatus === "requested" ? "~20 min" : "~10 min"}
+            </p>
+          )}
+          {cleaningStatus === "done" && (
+            <p className="text-[11px] text-primary text-center mt-3 font-medium">✨ Suite limpa e pronta para si</p>
+          )}
         </section>
       </div>
       </TooltipProvider>

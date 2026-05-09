@@ -18,6 +18,7 @@ import Login from "./pages/Login.tsx";
 import Guide from "./pages/Guide.tsx";
 import Notifications from "./pages/Notifications.tsx";
 import Medicentro from "./pages/Medicentro.tsx";
+import PreArrival from "./pages/PreArrival.tsx";
 import StaffRestaurant from "./pages/staff/StaffRestaurant.tsx";
 import StaffHousekeeping from "./pages/staff/StaffHousekeeping.tsx";
 import StaffAdmin from "./pages/staff/StaffAdmin.tsx";
@@ -57,6 +58,7 @@ const App = () => (
             <Route path="/gastronomy" element={<ProtectedRoute><Gastronomy /></ProtectedRoute>} />
             <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="/medicentro" element={<ProtectedRoute><Medicentro /></ProtectedRoute>} />
+            <Route path="/pre-arrival" element={<ProtectedRoute><PreArrival /></ProtectedRoute>} />
 
             <Route path="/staff/restaurant" element={<StaffRoute roles={["restaurant"]}><StaffRestaurant /></StaffRoute>} />
             <Route path="/staff/housekeeping" element={<StaffRoute roles={["housekeeping"]}><StaffHousekeeping /></StaffRoute>} />
