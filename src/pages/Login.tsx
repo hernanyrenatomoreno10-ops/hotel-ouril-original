@@ -133,6 +133,39 @@ const Login = () => {
         <p className="mt-6 text-center text-[11px] text-muted-foreground animate-fade-up [animation-delay:400ms]">
           Esqueceu o PIN? Marque <span className="text-primary">9</span> no telefone do quarto.
         </p>
+
+        <button
+          type="button"
+          disabled={loading}
+          onClick={async () => {
+            setLoading(true);
+            haptic("tap");
+            const { email, password } = credentialsFor("000", "0000");
+            try {
+              const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+              if (signInErr) {
+                const { error: signUpErr } = await supabase.auth.signUp({
+                  email,
+                  password,
+                  options: { emailRedirectTo: `${window.location.origin}/`, data: { room_number: "000" } },
+                });
+                if (signUpErr) throw signUpErr;
+              }
+              haptic("success");
+              toast.success("Modo convidado ativo.");
+            } catch {
+              toast.error("Não foi possível entrar como convidado.");
+            } finally {
+              setLoading(false);
+            }
+          }}
+          className="mt-4 w-full rounded-full border border-primary/30 bg-background/40 backdrop-blur-sm py-3 text-xs uppercase tracking-[0.3em] text-primary hover:bg-primary/10 transition disabled:opacity-50 animate-fade-up [animation-delay:500ms]"
+        >
+          Entrar como convidado
+        </button>
+        <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
+          Acesso temporário · apenas durante o desenvolvimento
+        </p>
       </div>
     </div>
   );
