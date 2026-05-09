@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type KeyState = "idle" | "activating" | "unlocked";
 
@@ -16,9 +17,18 @@ const DigitalKey = () => {
   );
   const abortRef = useRef<AbortController | null>(null);
 
-  const finalizeUnlock = () => {
+  const finalizeUnlock = async () => {
     haptic("success");
     setKeyState("unlocked");
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("door_access_logs").insert({
+        user_id: user.id,
+        room_number: ((user.user_metadata as any)?.room_number ?? "412"),
+        method: "NDEFReader" in window ? "nfc" : "ble",
+        status: "success",
+      });
+    }
     setTimeout(() => setKeyState("idle"), 3500);
   };
 
