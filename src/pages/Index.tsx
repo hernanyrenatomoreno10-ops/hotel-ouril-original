@@ -53,6 +53,7 @@ const Index = () => {
         service_type: "Room Service Express",
         description: label,
         price,
+        room_number: roomNumber,
       });
     }
     toast.success(`${label} a caminho da Suite ${roomNumber}`, {

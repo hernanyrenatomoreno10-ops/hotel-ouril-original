@@ -52,6 +52,7 @@ const Gastronomy = () => {
         item_name: item.name,
         price: item.price_eur,
         status: "pending",
+        room_number: ((user.user_metadata as any)?.room_number ?? "412"),
       });
       window.dispatchEvent(new CustomEvent("mh:account-update"));
     }
