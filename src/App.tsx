@@ -23,6 +23,7 @@ import Wellness from "./pages/Wellness.tsx";
 import StaffRestaurant from "./pages/staff/StaffRestaurant.tsx";
 import StaffHousekeeping from "./pages/staff/StaffHousekeeping.tsx";
 import StaffAdmin from "./pages/staff/StaffAdmin.tsx";
+import AdminCommandCenter from "./pages/AdminCommandCenter.tsx";
 
 const queryClient = new QueryClient();
 
@@ -65,6 +66,7 @@ const App = () => (
             <Route path="/staff/restaurant" element={<StaffRoute roles={["restaurant"]}><StaffRestaurant /></StaffRoute>} />
             <Route path="/staff/housekeeping" element={<StaffRoute roles={["housekeeping"]}><StaffHousekeeping /></StaffRoute>} />
             <Route path="/staff/admin" element={<StaffRoute roles={["admin"]}><StaffAdmin /></StaffRoute>} />
+            <Route path="/admin" element={<StaffRoute roles={["admin"]}><AdminCommandCenter /></StaffRoute>} />
             
             <Route path="*" element={<NotFound />} />
             </Routes>
