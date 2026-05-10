@@ -293,6 +293,42 @@ export type Database = {
           },
         ]
       }
+      hotel_content: {
+        Row: {
+          created_at: string
+          description: string | null
+          hotel_id: string | null
+          id: string
+          image_url: string | null
+          key: string
+          price_eur: number | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          hotel_id?: string | null
+          id?: string
+          image_url?: string | null
+          key: string
+          price_eur?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          hotel_id?: string | null
+          id?: string
+          image_url?: string | null
+          key?: string
+          price_eur?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       hotels: {
         Row: {
           brand_color: string | null
