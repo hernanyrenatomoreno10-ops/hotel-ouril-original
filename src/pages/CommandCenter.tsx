@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   LayoutDashboard, Utensils, Lightbulb, ConciergeBell, Settings, 
-  Server, Users, CircleCheck, PowerOff, Image as ImageIcon, Save, Clock
+  Server, Users, CircleCheck, PowerOff, Image as ImageIcon, Save, Clock,
+  Plus, Trash2, Edit2, X, ChevronRight, History
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
@@ -16,6 +17,14 @@ export default function CommandCenter() {
   const [pratoDoDia, setPratoDoDia] = useState({ name: "", price: "", description: "", image_url: "" });
   const [pedidos, setPedidos] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
+  const [gastronomyItems, setGastronomyItems] = useState<any[]>([]);
+  const [experiences, setExperiences] = useState<any[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  
+  // CMS Form States
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [newItem, setNewItem] = useState({ name: "", price_eur: 0, description: "", category: "Destaques", image_url: "" });
 
   useEffect(() => {
     // Fetch initial data
@@ -44,12 +53,20 @@ export default function CommandCenter() {
         ]);
       }
 
+      // Gastronomy Items
+      const { data: gastroData } = await supabase.from("gastronomy_items").select("*").order("created_at", { ascending: false });
+      if (gastroData) setGastronomyItems(gastroData);
+
+      // Experiences / Events
+      const { data: expData } = await supabase.from("experiences").select("*").order("created_at", { ascending: false });
+      if (expData) setExperiences(expData);
+
       // Tentar carregar Prato do Dia se existir tabela hotel_content
       const { data: contentData } = await supabase
         .from("hotel_content" as any)
         .select("*")
         .eq("key", "prato_do_dia")
-        .single();
+        .maybeSingle();
       
       if (contentData && contentData.value) {
         setPratoDoDia(contentData.value);
@@ -104,17 +121,64 @@ export default function CommandCenter() {
     try {
       const { error } = await supabase
         .from("room_settings")
-        .update({ ac_power: false, lights_level: 0 })
+        .update({ ac_power: false, lights_level: 0, temperature: 24 })
         .eq("id", roomId);
       
       if (error) throw error;
-      setRooms(rooms.map(r => r.id === roomId ? { ...r, ac_power: false, lights_level: 0 } : r));
+      setRooms(rooms.map(r => r.id === roomId ? { ...r, ac_power: false, lights_level: 0, temperature: 24 } : r));
       toast.success("Quarto resetado com segurança.");
     } catch (err) {
       console.error(err);
-      // Fallback update for mock
-      setRooms(rooms.map(r => r.id === roomId ? { ...r, ac_power: false, lights_level: 0 } : r));
+      setRooms(rooms.map(r => r.id === roomId ? { ...r, ac_power: false, lights_level: 0, temperature: 24 } : r));
       toast.success("Quarto resetado (Mock).");
+    }
+  };
+
+  const handleToggleRoomAC = async (roomId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    setRooms(rooms.map(r => r.id === roomId ? { ...r, ac_power: newStatus } : r));
+    try {
+      const { error } = await supabase.from("room_settings").update({ ac_power: newStatus }).eq("id", roomId);
+      if (error) throw error;
+      toast.info(`AC da Suite ${rooms.find(r => r.id === roomId)?.room_number} ${newStatus ? "Ligado" : "Desligado"}`);
+    } catch (err) {
+      console.warn("Update mock only");
+    }
+  };
+
+  const handleUpdateItem = async () => {
+    if (!newItem.name || !newItem.price_eur) {
+      toast.error("Nome e preço são obrigatórios.");
+      return;
+    }
+
+    try {
+      if (editingItem) {
+        const { error } = await supabase.from("gastronomy_items").update(newItem).eq("id", editingItem.id);
+        if (error) throw error;
+        setGastronomyItems(gastronomyItems.map(i => i.id === editingItem.id ? { ...i, ...newItem } : i));
+        toast.success("Item atualizado!");
+      } else {
+        const { data, error } = await supabase.from("gastronomy_items").insert([newItem]).select();
+        if (error) throw error;
+        if (data) setGastronomyItems([data[0], ...gastronomyItems]);
+        toast.success("Novo item criado!");
+      }
+      setNewItem({ name: "", price_eur: 0, description: "", category: "Destaques", image_url: "" });
+      setEditingItem(null);
+    } catch (err) {
+      toast.error("Erro ao salvar item.");
+    }
+  };
+
+  const handleDeleteItem = async (id: string) => {
+    try {
+      const { error } = await supabase.from("gastronomy_items").delete().eq("id", id);
+      if (error) throw error;
+      setGastronomyItems(gastronomyItems.filter(i => i.id !== id));
+      toast.success("Item removido.");
+    } catch (err) {
+      toast.error("Erro ao remover.");
     }
   };
 
@@ -216,63 +280,153 @@ export default function CommandCenter() {
           )}
 
           {activeTab === "restaurante" && (
-            <div className="max-w-2xl">
-              <div className="glass rounded-3xl p-8 border border-primary/20 shadow-glow relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-                <h3 className="font-display text-2xl mb-6 flex items-center gap-2">
-                  <Utensils className="text-primary" /> Gestor de Conteúdo: Restaurante
-                </h3>
-                <div className="space-y-5 relative z-10">
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1.5">Prato do Dia</label>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Form Side */}
+              <div className="lg:col-span-1 space-y-6">
+                <div className="glass rounded-3xl p-6 border border-primary/20 shadow-glow relative overflow-hidden">
+                  <h3 className="font-display text-xl mb-6 flex items-center gap-2">
+                    {editingItem ? <Edit2 className="text-primary h-5 w-5" /> : <Plus className="text-primary h-5 w-5" />}
+                    {editingItem ? "Editar Item" : "Novo Item"}
+                  </h3>
+                  <div className="space-y-4">
                     <input 
                       type="text" 
-                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                      value={pratoDoDia.name}
-                      onChange={e => setPratoDoDia({...pratoDoDia, name: e.target.value})}
-                      placeholder="Ex: Lagosta Suada com Legumes"
+                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/50"
+                      value={newItem.name}
+                      onChange={e => setNewItem({...newItem, name: e.target.value})}
+                      placeholder="Nome do Prato"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1.5">Preço (CVE / EUR)</label>
-                    <input 
-                      type="text" 
-                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                      value={pratoDoDia.price}
-                      onChange={e => setPratoDoDia({...pratoDoDia, price: e.target.value})}
-                      placeholder="Ex: 25€"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1.5">Descrição</label>
-                    <textarea 
-                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all h-24 resize-none"
-                      value={pratoDoDia.description}
-                      onChange={e => setPratoDoDia({...pratoDoDia, description: e.target.value})}
-                      placeholder="Descrição apetitosa do prato..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-muted-foreground mb-1.5">URL de Imagem de Destaque</label>
                     <div className="flex gap-2">
-                      <div className="flex-1 relative">
-                        <ImageIcon className="absolute left-4 top-3.5 h-5 w-5 text-muted-foreground" />
-                        <input 
-                          type="text" 
-                          className="w-full bg-background/50 border border-border rounded-xl pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                          value={pratoDoDia.image_url}
-                          onChange={e => setPratoDoDia({...pratoDoDia, image_url: e.target.value})}
-                          placeholder="https://..."
-                        />
-                      </div>
+                      <input 
+                        type="number" 
+                        className="flex-1 bg-background/50 border border-border rounded-xl px-4 py-2.5 text-sm"
+                        value={newItem.price_eur}
+                        onChange={e => setNewItem({...newItem, price_eur: Number(e.target.value)})}
+                        placeholder="Preço (€)"
+                      />
+                      <select 
+                        className="bg-background/50 border border-border rounded-xl px-3 py-2.5 text-xs"
+                        value={newItem.category || ""}
+                        onChange={e => setNewItem({...newItem, category: e.target.value})}
+                      >
+                        <option value="Destaques">Destaques</option>
+                        <option value="Entradas">Entradas</option>
+                        <option value="Peixe">Peixe</option>
+                        <option value="Carne">Carne</option>
+                        <option value="Sobremesas">Sobremesas</option>
+                      </select>
+                    </div>
+                    <textarea 
+                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-2.5 text-sm h-20 resize-none"
+                      value={newItem.description || ""}
+                      onChange={e => setNewItem({...newItem, description: e.target.value})}
+                      placeholder="Descrição..."
+                    />
+                    <input 
+                      type="text" 
+                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-2.5 text-sm"
+                      value={newItem.image_url || ""}
+                      onChange={e => setNewItem({...newItem, image_url: e.target.value})}
+                      placeholder="URL da Imagem"
+                    />
+                    <div className="flex gap-2 pt-2">
+                      {editingItem && (
+                        <button 
+                          onClick={() => { setEditingItem(null); setNewItem({ name: "", price_eur: 0, description: "", category: "Destaques", image_url: "" }); }}
+                          className="flex-1 bg-muted text-foreground py-2.5 rounded-xl text-sm font-medium"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                      <button 
+                        onClick={handleUpdateItem}
+                        className="flex-[2] bg-primary text-primary-foreground py-2.5 rounded-xl text-sm font-medium shadow-glow flex items-center justify-center gap-2"
+                      >
+                        <Save className="h-4 w-4" /> {editingItem ? "Atualizar" : "Criar Item"}
+                      </button>
                     </div>
                   </div>
-                  <button 
-                    onClick={handleSavePrato}
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-medium py-3.5 rounded-xl transition-all shadow-glow flex items-center justify-center gap-2 mt-4"
-                  >
-                    <Save className="h-5 w-5" /> Salvar Alterações
-                  </button>
+                </div>
+
+                <div className="glass rounded-3xl p-6">
+                  <h3 className="font-display text-lg mb-4 flex items-center gap-2">
+                    <History className="h-5 w-5 text-primary" /> Prato do Dia
+                  </h3>
+                  <div className="space-y-3">
+                    <input 
+                      type="text" 
+                      className="w-full bg-background/50 border border-border rounded-xl px-4 py-2 text-xs"
+                      value={pratoDoDia.name}
+                      onChange={e => setPratoDoDia({...pratoDoDia, name: e.target.value})}
+                      placeholder="Nome do Prato"
+                    />
+                    <button onClick={handleSavePrato} className="w-full bg-primary/20 text-primary py-2 rounded-xl text-xs font-bold uppercase tracking-wider">
+                      Atualizar Destaque
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* List Side */}
+              <div className="lg:col-span-2 space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h3 className="font-display text-xl">Cardápio Atual</h3>
+                  <span className="text-xs text-muted-foreground">{gastronomyItems.length} itens</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {gastronomyItems.map(item => (
+                    <div key={item.id} className="glass rounded-2xl p-4 flex gap-4 group">
+                      <div className="h-20 w-20 rounded-xl overflow-hidden shrink-0 border border-border/40">
+                        <img src={item.image_url || "/placeholder.svg"} className="h-full w-full object-cover" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-start">
+                          <h4 className="font-medium text-sm truncate">{item.name}</h4>
+                          <span className="text-primary font-bold text-xs">€{item.price_eur}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground line-clamp-2 mt-1">{item.description}</p>
+                        <div className="flex gap-2 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => { setEditingItem(item); setNewItem(item); }}
+                            className="p-1.5 rounded-lg bg-muted hover:bg-primary/20 hover:text-primary transition-colors"
+                          >
+                            <Edit2 className="h-3.5 w-3.5" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="p-1.5 rounded-lg bg-muted hover:bg-destructive/20 hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                <div className="pt-6 border-t border-border/40">
+                  <div className="flex items-center justify-between px-2 mb-4">
+                    <h3 className="font-display text-xl">Eventos & Experiências</h3>
+                    <span className="text-xs text-muted-foreground">{experiences.length} eventos</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {experiences.map(exp => (
+                      <div key={exp.id} className="glass rounded-2xl p-4 flex gap-4 group border-primary/10">
+                        <div className="h-20 w-20 rounded-xl overflow-hidden shrink-0">
+                          <img src={exp.image_url || "/placeholder.svg"} className="h-full w-full object-cover" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-start">
+                            <h4 className="font-medium text-sm truncate">{exp.title}</h4>
+                            <span className="text-xs font-bold text-primary">{exp.tag}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-1">{exp.place}</p>
+                          <div className="flex gap-2 mt-3">
+                            <button className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors">EDITAR</button>
+                            <button className="text-[10px] font-bold text-muted-foreground hover:text-destructive transition-colors">REMOVER</button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -290,7 +444,10 @@ export default function CommandCenter() {
                   </div>
                 ) : (
                   pedidos.map(p => (
-                    <div key={p.id} className="glass rounded-3xl p-6 border border-primary/20 shadow-glow flex flex-col h-full relative overflow-hidden">
+                    <div key={p.id} 
+                      onClick={() => { setSelectedOrder(p); setIsOrderModalOpen(true); }}
+                      className="glass rounded-3xl p-6 border border-primary/20 shadow-glow flex flex-col h-full relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform group"
+                    >
                       <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
                       <div className="flex justify-between items-start mb-4">
                         <div>
@@ -301,13 +458,11 @@ export default function CommandCenter() {
                         </div>
                       </div>
                       <h4 className="text-lg font-medium mb-1">{p.service_type || "Item"}</h4>
-                      <p className="text-sm text-muted-foreground mb-6 flex-1">{p.description || "Sem detalhes adicionais"}</p>
-                      <button 
-                        onClick={() => handleEntregarPedido(p.id)}
-                        className="w-full bg-background border border-border hover:border-primary hover:text-primary transition-colors py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
-                      >
-                        <CircleCheck className="h-4 w-4" /> Marcar como Entregue
-                      </button>
+                      <p className="text-sm text-muted-foreground mb-6 flex-1 line-clamp-2">{p.description || "Sem detalhes adicionais"}</p>
+                      <div className="w-full flex items-center justify-between text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span>Ver detalhes</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </div>
                     </div>
                   ))
                 )}
@@ -325,28 +480,38 @@ export default function CommandCenter() {
                   <div key={room.id} className={cn("glass rounded-3xl p-6 transition-all", room.ac_power ? "border-primary/30 shadow-glow" : "border-border/40 opacity-80")}>
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="font-display text-xl font-bold">Suite {room.room_number}</h4>
-                      <div className={cn("h-3 w-3 rounded-full", room.ac_power ? "bg-primary shadow-[0_0_10px_hsl(var(--primary))]" : "bg-muted")}></div>
+                      <button 
+                        onClick={() => handleToggleRoomAC(room.id, room.ac_power)}
+                        className={cn("h-10 w-10 rounded-full grid place-items-center transition-all", room.ac_power ? "bg-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground")}
+                      >
+                        <Lightbulb className="h-5 w-5" />
+                      </button>
                     </div>
                     <div className="space-y-4 mb-6">
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Ar Condicionado</span>
-                        <span className="font-medium">{room.ac_power ? "LIGADO" : "DESLIGADO"}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={cn("h-1.5 w-1.5 rounded-full animate-pulse", room.ac_power ? "bg-green-500" : "bg-red-500")} />
+                          <span className="font-medium">{room.ac_power ? "Ativo" : "Off"}</span>
+                        </div>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Temperatura</span>
-                        <span className="font-medium">{room.temperature || "--"} °C</span>
+                        <span className="font-medium tabular-nums">{room.temperature || "22"}°C</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">Luzes</span>
-                        <span className="font-medium">{room.lights_level || "0"}%</span>
+                        <span className="font-medium tabular-nums">{room.lights_level || "100"}%</span>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => handleResetRoom(room.id)}
-                      className="w-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2"
-                    >
-                      <PowerOff className="h-4 w-4" /> Reset Pós-Checkout
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleResetRoom(room.id)}
+                        className="flex-1 bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground transition-colors py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
+                      >
+                        Reset
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -362,6 +527,83 @@ export default function CommandCenter() {
 
         </div>
       </main>
+
+      {/* Order Detail Modal */}
+      {isOrderModalOpen && selectedOrder && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={() => setIsOrderModalOpen(false)}></div>
+          <div className="relative glass-deep w-full max-w-lg rounded-[32px] overflow-hidden shadow-2xl border border-primary/20 animate-in zoom-in duration-300">
+            <div className="p-8">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary bg-primary/10 px-3 py-1 rounded-full">Detalhes do Pedido</span>
+                  <h2 className="font-display text-3xl font-bold mt-3">Suite {selectedOrder.room_number || "---"}</h2>
+                </div>
+                <button 
+                  onClick={() => setIsOrderModalOpen(false)}
+                  className="h-10 w-10 rounded-full glass border-border hover:bg-muted transition-colors grid place-items-center"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30">
+                  <div className="h-10 w-10 rounded-xl bg-primary/20 grid place-items-center shrink-0">
+                    <ConciergeBell className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold">{selectedOrder.service_type}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{selectedOrder.description || "Nenhum detalhe adicional fornecido pelo hóspede."}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+                    <History className="h-3.5 w-3.5" /> Histórico do Pedido
+                  </h4>
+                  <div className="space-y-3 relative before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-px before:bg-border">
+                    <HistoryItem time="Agora" status="Aguardando atendimento" active />
+                    <HistoryItem time={getWaitTime(selectedOrder.created_at) + " atrás"} status="Pedido recebido pelo sistema" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-10 flex gap-3">
+                <button 
+                  onClick={() => setIsOrderModalOpen(false)}
+                  className="flex-1 py-4 rounded-2xl glass border-border font-medium text-sm transition-all"
+                >
+                  Fechar
+                </button>
+                <button 
+                  onClick={() => {
+                    handleEntregarPedido(selectedOrder.id);
+                    setIsOrderModalOpen(false);
+                  }}
+                  className="flex-[2] py-4 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-glow transition-all active:scale-[0.98]"
+                >
+                  Concluir e Entregar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoryItem({ time, status, active }: { time: string, status: string, active?: boolean }) {
+  return (
+    <div className="flex items-center gap-4 pl-1 relative">
+      <div className={cn("h-5 w-5 rounded-full border-2 border-background z-10 grid place-items-center", active ? "bg-primary" : "bg-muted")}>
+        {active && <div className="h-1.5 w-1.5 rounded-full bg-primary-foreground" />}
+      </div>
+      <div className="flex-1">
+        <p className={cn("text-xs font-medium", active ? "text-foreground" : "text-muted-foreground")}>{status}</p>
+        <p className="text-[10px] text-muted-foreground/60">{time}</p>
+      </div>
     </div>
   );
 }

@@ -253,14 +253,13 @@ const Index = () => {
 
       {/* Outros serviços internos */}
       <section className="px-6 mt-7">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3">Mais Serviços</p>
         <motion.div className="grid grid-cols-2 gap-3" initial="hidden" animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } } }}>
-          <QuickAction to="/room" icon={SlidersHorizontal} title="Suite Control" subtitle="Luzes · cortinas · AC" />
-          <QuickAction to="/guide" icon={MapPin} title="Serviços Ouril" subtitle="O que oferecemos" />
-          <QuickAction to="/medicentro" icon={Stethoscope} title="Medicentro" subtitle="Saúde no quarto" />
+          <QuickAction to="/guide" icon={MapPin} title="Guia Ouril" subtitle="O que oferecemos" />
+          <QuickAction to="/medicentro" icon={Stethoscope} title="Medicentro" subtitle="Saúde na suite" />
           <QuickAction to="/wellness" icon={Dumbbell} title="Wellness" subtitle="Ginásio & piscinas" />
-          <QuickAction to="/checkout" icon={ArrowUpRight} title="Conta da Suite" subtitle="Extracto em tempo real" />
-          <QuickAction to="/gastronomy" icon={Wine} title="Gastronomia" subtitle="Menu Ouril 24h" />
+          <QuickAction to="/checkout" icon={ArrowUpRight} title="Minha Conta" subtitle="Extracto e check-out" />
         </motion.div>
       </section>
 
