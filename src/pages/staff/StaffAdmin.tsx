@@ -21,24 +21,24 @@ const StaffAdmin = () => {
         supabase.from("service_requests").select("*").gte("created_at", since),
         supabase.from("door_access_logs").select("*").order("created_at", { ascending: false }).limit(50),
       ]);
-      setOrders((o ?? []) as any);
-      setSvc((s ?? []) as any);
-      setDoors((d ?? []) as any);
+      setOrders((o ?? []) as Order[]);
+      setSvc((s ?? []) as Svc[]);
+      setDoors((d ?? []) as Door[]);
     })();
   }, []);
 
   const today = new Date().toISOString().slice(0, 10);
   const totalToday = useMemo(() => {
-    const sum = (a: any[]) => a.filter((x) => x.created_at.startsWith(today)).reduce((s, x) => s + Number(x.price || 0), 0);
+    const sum = (a: (Order | Svc)[]) => a.filter((x) => x.created_at.startsWith(today)).reduce((s, x) => s + Number(x.price || 0), 0);
     return sum(orders) + sum(svc);
   }, [orders, svc, today]);
   const totalMonth = useMemo(() =>
     [...orders, ...svc].reduce((s, x) => s + Number(x.price || 0), 0), [orders, svc]);
 
   const avgResponseMin = useMemo(() => {
-    const closed = [...orders, ...svc].filter((x: any) => x.status === "done" || x.status === "delivered");
+    const closed = [...orders, ...svc].filter((x) => x.status === "done" || x.status === "delivered");
     if (!closed.length) return 0;
-    const total = closed.reduce((s: number, x: any) =>
+    const total = closed.reduce((s: number, x) =>
       s + (new Date(x.updated_at).getTime() - new Date(x.created_at).getTime()), 0);
     return Math.round(total / closed.length / 60000);
   }, [orders, svc]);
@@ -141,7 +141,7 @@ const StaffAdmin = () => {
   );
 };
 
-const Kpi = ({ label, value, icon: Icon, accent }: { label: string; value: string; icon: any; accent?: boolean }) => (
+const Kpi = ({ label, value, icon: Icon, accent }: { label: string; value: string; icon: React.ComponentType<{ className?: string }>; accent?: boolean }) => (
   <div className={`glass rounded-2xl p-4 ${accent ? "ring-1 ring-primary/40 shadow-glow" : ""}`}>
     <div className="flex items-center justify-between">
       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">{label}</p>

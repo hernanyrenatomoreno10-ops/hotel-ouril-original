@@ -1,8 +1,9 @@
 import { ReactNode, useState } from "react";
+import { Link } from "react-router-dom";
+import { Utensils, Sparkles, BarChart3, ShieldCheck, Search } from "lucide-react";
 import BottomNav from "./BottomNav";
 import Spotlight from "./Spotlight";
 import InstallBanner from "./InstallBanner";
-import { Search } from "lucide-react";
 import { haptic } from "@/lib/haptics";
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
@@ -11,6 +12,22 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="pb-32">{children}</main>
+
+      {/* Staff Quick Access (Dev Mode) */}
+      <div className="fixed left-4 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-2">
+        <Link to="/staff/restaurant" className="h-10 w-10 rounded-full glass border-primary/20 grid place-items-center hover:bg-primary/10 transition-all shadow-glow group" title="Restaurante">
+          <Utensils className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+        </Link>
+        <Link to="/staff/housekeeping" className="h-10 w-10 rounded-full glass border-primary/20 grid place-items-center hover:bg-primary/10 transition-all shadow-glow group" title="Governação">
+          <Sparkles className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+        </Link>
+        <Link to="/staff/admin" className="h-10 w-10 rounded-full glass border-primary/20 grid place-items-center hover:bg-primary/10 transition-all shadow-glow group" title="Admin Staff">
+          <BarChart3 className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+        </Link>
+        <Link to="/admin" className="h-10 w-10 rounded-full glass border-primary/20 grid place-items-center hover:bg-primary/10 transition-all shadow-glow group" title="Command Center">
+          <ShieldCheck className="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+        </Link>
+      </div>
 
       {/* Language Selector & Spotlight */}
       <div className="fixed bottom-28 right-5 z-30 flex flex-col gap-3">

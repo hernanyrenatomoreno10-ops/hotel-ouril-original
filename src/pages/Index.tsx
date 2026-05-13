@@ -30,12 +30,18 @@ const Index = () => {
   const [currentBooking, setCurrentBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [privacy, setPrivacy] = useState<"none" | "dnd" | "makeup">("none");
+  const [pratoDoDia, setPratoDoDia] = useState<any>(null);
 
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await supabase.from('bookings').select('*, hotels(name)').limit(1).maybeSingle();
-        if (data) setCurrentBooking({ ...data, hotel_name: (data as any).hotels?.name });
+        const [{ data: bookingData }, { data: contentData }] = await Promise.all([
+          supabase.from('bookings').select('*, hotels(name)').limit(1).maybeSingle(),
+          supabase.from('hotel_content' as any).select('*').eq('key', 'prato_do_dia').maybeSingle()
+        ]);
+        
+        if (bookingData) setCurrentBooking({ ...bookingData, hotel_name: (bookingData as any).hotels?.name });
+        if (contentData && contentData.value) setPratoDoDia(contentData.value);
       } catch (err) { console.warn(err); }
       finally { setLoading(false); }
     })();
@@ -152,21 +158,21 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Prato do Dia — Novo requisito */}
+      {/* Prato do Dia — Dinâmico do Admin */}
       <section className="px-6 mt-7">
         <div className="glass rounded-3xl overflow-hidden border-primary/20 bg-primary/5">
           <div className="relative h-32 w-full overflow-hidden">
-            <img src="https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop" alt="Prato do dia" className="w-full h-full object-cover opacity-60" />
+            <img src={pratoDoDia?.image_url || "https://images.unsplash.com/photo-1551183053-bf91a1d81141?q=80&w=800&auto=format&fit=crop"} alt="Prato do dia" className="w-full h-full object-cover opacity-60" />
             <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
             <div className="absolute bottom-3 left-4">
               <span className="text-[9px] uppercase tracking-widest text-primary font-bold bg-background/50 backdrop-blur-sm px-2 py-0.5 rounded-full">Prato do Dia</span>
-              <h3 className="font-display text-lg font-semibold mt-1">Cachupa Rica Ouril</h3>
+              <h3 className="font-display text-lg font-semibold mt-1">{pratoDoDia?.name || "Cachupa Rica Ouril"}</h3>
             </div>
           </div>
           <div className="p-4 flex items-center justify-between">
-            <p className="text-[11px] text-muted-foreground max-w-[180px]">O sabor tradicional de Cabo Verde com o toque do nosso Chef.</p>
+            <p className="text-[11px] text-muted-foreground max-w-[180px]">{pratoDoDia?.description || "O sabor tradicional de Cabo Verde com o toque do nosso Chef."}</p>
             <Link to="/gastronomy" className="h-9 px-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold grid place-items-center active:scale-95 transition shadow-glow">
-              Pedir €14.50
+              Pedir {pratoDoDia?.price || "€14.50"}
             </Link>
           </div>
         </div>

@@ -17,8 +17,8 @@ const StaffHousekeeping = () => {
   const [reqs, setReqs] = useState<Req[]>([]);
   const load = async () => {
     const { data } = await supabase.from("service_requests").select("*")
-      .neq("status", "done").order("created_at", { ascending: true });
-    setReqs((data ?? []) as any);
+      .neq("status", "delivered").order("created_at", { ascending: true });
+    setReqs((data ?? []) as Req[]);
   };
   useEffect(() => {
     load();
@@ -31,7 +31,7 @@ const StaffHousekeeping = () => {
   const complete = async (r: Req) => {
     haptic("success");
     const { error } = await supabase.from("service_requests")
-      .update({ status: "done", updated_at: new Date().toISOString() }).eq("id", r.id);
+      .update({ status: "delivered", updated_at: new Date().toISOString() }).eq("id", r.id);
     if (error) toast.error("Sem permissão."); else toast.success(`Suite ${r.room_number ?? "—"} concluído`);
   };
 

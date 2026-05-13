@@ -14,7 +14,7 @@ const Login = () => {
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
 
-  if (user) {
+  if (user || sessionStorage.getItem("guest_mode") === "true") {
     return <Navigate to="/" replace />;
   }
 
@@ -137,32 +137,14 @@ const Login = () => {
 
         <button
           type="button"
-          disabled={loading}
-          onClick={async () => {
-            setLoading(true);
-            haptic("tap");
-            const { email, password } = credentialsFor("000", "0000");
-            try {
-              const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-              if (signInErr) {
-                const { error: signUpErr } = await supabase.auth.signUp({
-                  email,
-                  password,
-                  options: { emailRedirectTo: `${window.location.origin}/`, data: { room_number: "000" } },
-                });
-                if (signUpErr) throw signUpErr;
-              }
-              haptic("success");
-              toast.success("Modo convidado ativo.");
-            } catch {
-              toast.error("Não foi possível entrar como convidado.");
-            } finally {
-              setLoading(false);
-            }
+          onClick={() => {
+            haptic("success");
+            sessionStorage.setItem("guest_mode", "true");
+            window.location.href = "/";
           }}
-          className="mt-4 w-full rounded-full border border-primary/30 bg-background/40 backdrop-blur-sm py-3 text-xs uppercase tracking-[0.3em] text-primary hover:bg-primary/10 transition disabled:opacity-50 animate-fade-up [animation-delay:500ms]"
+          className="mt-4 w-full rounded-full border border-primary/30 bg-background/40 backdrop-blur-sm py-3 text-xs uppercase tracking-[0.3em] text-primary hover:bg-primary/10 transition animate-fade-up [animation-delay:500ms]"
         >
-          Entrar como convidado
+          Acesso Rápido (Convidado)
         </button>
         <p className="mt-2 text-center text-[10px] text-muted-foreground/70">
           Acesso temporário · apenas durante o desenvolvimento

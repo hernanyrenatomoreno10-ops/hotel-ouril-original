@@ -13,7 +13,7 @@ type Order = {
 };
 type Item = { id: string; name: string; category: string | null; available: boolean };
 
-const STATUS_FLOW: Record<string, { next: string; label: string; icon: any }> = {
+const STATUS_FLOW: Record<string, { next: string; label: string; icon: React.ComponentType<{ className?: string }> }> = {
   pending: { next: "preparing", label: "Em Preparação", icon: ChefHat },
   preparing: { next: "out_for_delivery", label: "A Caminho", icon: Bike },
   out_for_delivery: { next: "delivered", label: "Entregue", icon: CheckCircle2 },
@@ -31,9 +31,9 @@ const StaffRestaurant = () => {
   const load = async () => {
     const { data: o } = await supabase.from("gastronomy_orders").select("*")
       .neq("status", "delivered").order("created_at", { ascending: true });
-    setOrders((o ?? []) as any);
+    setOrders((o ?? []) as Order[]);
     const { data: i } = await supabase.from("gastronomy_items").select("id,name,category,available").order("name");
-    setItems((i ?? []) as any);
+    setItems((i ?? []) as Item[]);
   };
 
   useEffect(() => {
