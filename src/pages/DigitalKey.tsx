@@ -7,10 +7,16 @@ import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 
 type KeyState = "idle" | "activating" | "unlocked";
 
 const DigitalKey = () => {
+  const { user } = useAuth();
+  const { activeHotel } = useHotel();
+  const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
+  const suiteName = (user?.user_metadata as any)?.suite_name ?? `Suite ${roomNumber}`;
   const [keyState, setKeyState] = useState<KeyState>("idle");
   const [nfcMode, setNfcMode] = useState<"unsupported" | "ready" | "scanning">(
     typeof window !== "undefined" && "NDEFReader" in window ? "ready" : "unsupported"
@@ -24,7 +30,7 @@ const DigitalKey = () => {
     if (user) {
       await supabase.from("door_access_logs").insert({
         user_id: user.id,
-        room_number: ((user.user_metadata as any)?.room_number ?? "412"),
+        room_number: roomNumber,
         method: "NDEFReader" in window ? "nfc" : "ble",
         status: "success",
       });
@@ -89,9 +95,9 @@ const DigitalKey = () => {
         </div>
 
         <div className="mt-10 text-center">
-          <p className="text-[10px] uppercase tracking-[0.25em] text-primary">Suite Atlântica</p>
-          <h1 className="font-display text-5xl font-semibold mt-2">412</h1>
-          <p className="text-sm text-muted-foreground mt-2">Ouril Mindelo · 4º andar</p>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-primary">{suiteName}</p>
+          <h1 className="font-display text-5xl font-semibold mt-2">{roomNumber}</h1>
+          <p className="text-sm text-muted-foreground mt-2">{activeHotel?.name || "Ouril Mindelo"} · Vista Porto Grande</p>
         </div>
 
         {/* Ripple visual & Button */}

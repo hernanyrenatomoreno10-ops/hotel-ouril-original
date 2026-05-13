@@ -119,6 +119,7 @@ const Experiences = () => {
         price_eur: item.price_eur ?? 45,
         status: "confirmed",
         user_id: user.id,
+        hotel_id: activeHotel?.id,
       });
       if (error) throw error;
       haptic("success");

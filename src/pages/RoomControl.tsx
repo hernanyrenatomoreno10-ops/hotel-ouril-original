@@ -29,6 +29,7 @@ import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 
 type SceneId = "bom-dia" | "por-do-sol" | "cinema" | "eco-glow";
 
@@ -41,6 +42,7 @@ const SCENES: { id: SceneId; label: string; icon: typeof Sun; hint: string }[] =
 
 const RoomControl = () => {
   const { user } = useAuth();
+  const { activeHotel } = useHotel();
   const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const [scene, setScene] = useState<SceneId>("por-do-sol");
   const [temp, setTemp] = useState<number[]>([22]);
@@ -65,7 +67,8 @@ const RoomControl = () => {
           temperature: temp[0],
           blinds_level: blinds[0],
           lights_level: lights[0],
-          ac_power: acPower
+          ac_power: acPower,
+          hotel_id: activeHotel?.id,
         }]);
       } catch (err) {
         console.error("Erro ao sincronizar sala:", err);
@@ -367,6 +370,7 @@ const RoomControl = () => {
                         service_type: "Conforto",
                         description: item.label,
                         room_number: roomNumber,
+                        hotel_id: activeHotel?.id,
                       });
                       window.dispatchEvent(new CustomEvent("mh:account-update"));
                     }
@@ -454,8 +458,11 @@ const RoomControl = () => {
                     const { data: { user: u } } = await supabase.auth.getUser();
                     if (u?.id) {
                       await supabase.from("service_requests").insert({
-                        user_id: u.id, service_type: "Housekeeping",
-                        description: "Limpeza completa da suite", room_number: "412",
+                        user_id: u.id, 
+                        service_type: "Housekeeping",
+                        description: "Limpeza completa da suite", 
+                        room_number: roomNumber,
+                        hotel_id: activeHotel?.id,
                       });
                     }
                   } catch {}

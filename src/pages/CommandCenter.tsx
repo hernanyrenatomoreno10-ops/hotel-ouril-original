@@ -21,6 +21,8 @@ export default function CommandCenter() {
   const [experiences, setExperiences] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState(false);
+  const [filterHotelId, setFilterHotelId] = useState<string>("all");
+  const { hotels } = useHotel();
   
   // CMS Form States
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -32,7 +34,7 @@ export default function CommandCenter() {
       // Pedidos
       const { data: svcData } = await supabase
         .from("service_requests")
-        .select("*")
+        .select("*, hotels(name)")
         .eq("status", "pending")
         .order("created_at", { ascending: false });
       
@@ -240,6 +242,18 @@ export default function CommandCenter() {
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">{onlineUsers} Hóspedes Ativos</span>
             </div>
+            
+            {/* Multi-Hotel Filter */}
+            <select 
+              className="bg-card border border-border/40 rounded-full px-4 py-2 text-xs font-bold outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+              value={filterHotelId}
+              onChange={(e) => setFilterHotelId(e.target.value)}
+            >
+              <option value="all">TODOS OS HOTÉIS</option>
+              {hotels.map(h => (
+                <option key={h.id} value={h.id}>{h.name.toUpperCase()}</option>
+              ))}
+            </select>
           </div>
         </header>
 
@@ -443,7 +457,9 @@ export default function CommandCenter() {
                     Nenhum pedido pendente no momento.
                   </div>
                 ) : (
-                  pedidos.map(p => (
+                  pedidos
+                    .filter(p => filterHotelId === "all" || p.hotel_id === filterHotelId)
+                    .map(p => (
                     <div key={p.id} 
                       onClick={() => { setSelectedOrder(p); setIsOrderModalOpen(true); }}
                       className="glass rounded-3xl p-6 border border-primary/20 shadow-glow flex flex-col h-full relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform group"
@@ -452,6 +468,7 @@ export default function CommandCenter() {
                       <div className="flex justify-between items-start mb-4">
                         <div>
                           <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded-md">Quarto {p.room_number || "---"}</span>
+                          <p className="text-[9px] uppercase tracking-widest text-muted-foreground mt-1.5 font-bold">{(p.hotels as any)?.name || "Ouril Hotels"}</p>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md">
                           <Clock className="h-3.5 w-3.5" /> {getWaitTime(p.created_at)}
@@ -499,9 +516,14 @@ export default function CommandCenter() {
                         <span className="text-muted-foreground">Temperatura</span>
                         <span className="font-medium tabular-nums">{room.temperature || "22"}°C</span>
                       </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Luzes</span>
-                        <span className="font-medium tabular-nums">{room.lights_level || "100"}%</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Luzes</span>
+                          <span className="font-medium tabular-nums">{room.lights_level || "100"}%</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary transition-all" style={{ width: `${room.lights_level || 100}%` }} />
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">

@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
 import { Utensils, Sparkles, BarChart3, LogOut, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHotel } from "@/components/HotelProvider";
 
 const tabs = [
   { to: "/staff/restaurant", label: "Restaurante", icon: Utensils, role: "restaurant" as const },
@@ -11,6 +12,7 @@ const tabs = [
 
 const StaffShell = ({ children, title }: { children: React.ReactNode; title: string }) => {
   const { roles, hasRole, signOut, user } = useAuth();
+  const { activeHotel, hotels, setActiveHotel } = useHotel();
   const nav = useNavigate();
   const visible = tabs.filter((t) => hasRole(t.role) || hasRole("admin"));
 
@@ -24,7 +26,10 @@ const StaffShell = ({ children, title }: { children: React.ReactNode; title: str
             </div>
             <div className="leading-tight">
               <p className="text-[10px] uppercase tracking-[0.3em] text-primary">Ouril · Back-office</p>
-              <p className="font-display text-lg font-semibold">{title}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="font-display text-lg font-semibold">{title}</p>
+                <span className="text-[10px] text-muted-foreground opacity-60">@ {activeHotel?.city || "Mindelo"}</span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -48,6 +53,24 @@ const StaffShell = ({ children, title }: { children: React.ReactNode; title: str
           ))}
           {visible.length === 0 && (
             <span className="text-xs text-muted-foreground">Sem permissões de back-office.</span>
+          )}
+          
+          {/* Admin Hotel Switcher */}
+          {hasRole("admin") && (
+            <div className="ml-auto flex gap-1 items-center glass px-2 py-1 rounded-full border-primary/20">
+              {hotels.map(h => (
+                <button 
+                  key={h.id}
+                  onClick={() => setActiveHotel(h)}
+                  className={cn(
+                    "h-6 px-2 rounded-full text-[9px] font-bold transition",
+                    activeHotel?.id === h.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {h.name.replace("Ouril ", "")}
+                </button>
+              ))}
+            </div>
           )}
         </nav>
       </header>

@@ -6,6 +6,7 @@ import { haptic } from "@/lib/haptics";
 import { Switch } from "@/components/ui/switch";
 import { Clock, ChefHat, Bike, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useHotel } from "@/components/HotelProvider";
 
 type Order = {
   id: string; item_name: string; price: number; status: string;
@@ -27,12 +28,18 @@ const elapsed = (iso: string) => {
 const StaffRestaurant = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [items, setItems] = useState<Item[]>([]);
+  const { activeHotel } = useHotel();
 
   const load = async () => {
-    const { data: o } = await supabase.from("gastronomy_orders").select("*")
-      .neq("status", "delivered").order("created_at", { ascending: true });
+    const hotelId = activeHotel?.id;
+    let orderQuery = supabase.from("gastronomy_orders").select("*").neq("status", "delivered").order("created_at", { ascending: true });
+    if (hotelId) orderQuery = orderQuery.eq("hotel_id", hotelId);
+    const { data: o } = await orderQuery;
     setOrders((o ?? []) as Order[]);
-    const { data: i } = await supabase.from("gastronomy_items").select("id,name,category,available").order("name");
+
+    let itemQuery = supabase.from("gastronomy_items").select("id,name,category,available").order("name");
+    if (hotelId) itemQuery = itemQuery.eq("hotel_id", hotelId);
+    const { data: i } = await itemQuery;
     setItems((i ?? []) as Item[]);
   };
 
@@ -43,7 +50,7 @@ const StaffRestaurant = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "gastronomy_items" }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, []);
+  }, [activeHotel?.id]);
 
   const advance = async (o: Order) => {
     const flow = STATUS_FLOW[o.status]; if (!flow) return;
