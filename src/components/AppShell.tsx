@@ -7,6 +7,7 @@ import InstallBanner from "./InstallBanner";
 import { haptic } from "@/lib/haptics";
 
 import { useHotel } from "./HotelProvider";
+import { SOSButton } from "./SOSButton";
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
   const [spotlightOpen, setSpotlightOpen] = useState(false);
@@ -67,6 +68,7 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
       <Spotlight open={spotlightOpen} onOpenChange={setSpotlightOpen} />
       <InstallBanner />
+      <SOSButton />
       <BottomNav />
     </div>
   );

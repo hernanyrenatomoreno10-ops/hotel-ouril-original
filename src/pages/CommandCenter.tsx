@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   LayoutDashboard, Utensils, Lightbulb, ConciergeBell, Settings, 
   Server, Users, CircleCheck, PowerOff, Image as ImageIcon, Save, Clock,
-  Plus, Trash2, Edit2, X, ChevronRight, History
+  Plus, Trash2, Edit2, X, ChevronRight, History, AlertTriangle
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
@@ -448,32 +448,67 @@ export default function CommandCenter() {
 
           {activeTab === "pedidos" && (
             <div>
-              <h3 className="font-display text-2xl mb-6 flex items-center gap-2">
-                <ConciergeBell className="text-primary" /> Fila de Pedidos (Menu Conforto)
-              </h3>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-display text-2xl flex items-center gap-2">
+                  <ConciergeBell className="text-primary" /> Fila de Pedidos
+                </h3>
+                {pedidos.filter(p => p.service_type === "SOS").length > 0 && (
+                  <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/40 px-4 py-2 rounded-full animate-pulse">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <span className="text-xs font-black text-destructive uppercase tracking-wider">
+                      {pedidos.filter(p => p.service_type === "SOS").length} Alerta{pedidos.filter(p => p.service_type === "SOS").length > 1 ? "s" : ""} SOS
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {pedidos.length === 0 ? (
                   <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed border-border rounded-3xl">
                     Nenhum pedido pendente no momento.
                   </div>
                 ) : (
-                  pedidos
+                  [...pedidos]
                     .filter(p => filterHotelId === "all" || p.hotel_id === filterHotelId)
-                    .map(p => (
-                    <div key={p.id} 
-                      onClick={() => { setSelectedOrder(p); setIsOrderModalOpen(true); }}
-                      className="glass rounded-3xl p-6 border border-primary/20 shadow-glow flex flex-col h-full relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-transform group"
-                    >
-                      <div className="absolute top-0 left-0 w-1 h-full bg-primary"></div>
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <span className="text-xs font-bold uppercase tracking-wider text-primary bg-primary/10 px-2 py-1 rounded-md">Quarto {p.room_number || "---"}</span>
-                          <p className="text-[9px] uppercase tracking-widest text-muted-foreground mt-1.5 font-bold">{(p.hotels as any)?.name || "Ouril Hotels"}</p>
+                    // SOS first, then by created_at
+                    .sort((a, b) => {
+                      if (a.service_type === "SOS" && b.service_type !== "SOS") return -1;
+                      if (b.service_type === "SOS" && a.service_type !== "SOS") return 1;
+                      return 0;
+                    })
+                    .map(p => {
+                      const isSOS = p.service_type === "SOS";
+                      return (
+                      <div key={p.id} 
+                        onClick={() => { setSelectedOrder(p); setIsOrderModalOpen(true); }}
+                        className={cn(
+                          "rounded-3xl p-6 flex flex-col h-full relative overflow-hidden cursor-pointer hover:scale-[1.02] transition-all group",
+                          isSOS
+                            ? "bg-destructive/10 border-2 border-destructive/60 shadow-[0_0_30px_rgba(239,68,68,0.25)] animate-pulse-slow"
+                            : "glass border border-primary/20 shadow-glow"
+                        )}
+                      >
+                        {/* Left accent bar */}
+                        <div className={cn("absolute top-0 left-0 w-1.5 h-full rounded-l-3xl", isSOS ? "bg-destructive" : "bg-primary")} />
+
+                        {/* SOS Badge */}
+                        {isSOS && (
+                          <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-destructive text-white text-[10px] font-black px-2 py-1 rounded-full animate-pulse">
+                            <AlertTriangle className="h-3 w-3" /> EMERGÊNCIA
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <span className={cn(
+                              "text-xs font-bold uppercase tracking-wider px-2 py-1 rounded-md",
+                              isSOS ? "text-destructive bg-destructive/10" : "text-primary bg-primary/10"
+                            )}>Quarto {p.room_number || "---"}</span>
+                            <p className="text-[9px] uppercase tracking-widest text-muted-foreground mt-1.5 font-bold">{(p.hotels as any)?.name || "Ouril Hotels"}</p>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md">
+                            <Clock className="h-3.5 w-3.5" /> {getWaitTime(p.created_at)}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md">
-                          <Clock className="h-3.5 w-3.5" /> {getWaitTime(p.created_at)}
-                        </div>
-                      </div>
                       <h4 className="text-lg font-medium mb-1">{p.service_type || "Item"}</h4>
                       <p className="text-sm text-muted-foreground mb-6 flex-1 line-clamp-2">{p.description || "Sem detalhes adicionais"}</p>
                       <div className="w-full flex items-center justify-between text-xs font-bold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
@@ -481,8 +516,9 @@ export default function CommandCenter() {
                         <ChevronRight className="h-4 w-4" />
                       </div>
                     </div>
-                  ))
-                )}
+                   );
+                    })
+                 )}
               </div>
             </div>
           )}
