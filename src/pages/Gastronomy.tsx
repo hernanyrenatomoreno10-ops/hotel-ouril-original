@@ -6,6 +6,7 @@ import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 
 type MenuItem = {
   id: string;
@@ -20,16 +21,21 @@ type MenuItem = {
 
 const Gastronomy = () => {
   const { user } = useAuth();
+  const { activeHotel } = useHotel();
   const [items, setItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<MenuItem[]>([]);
   const [activeCat, setActiveCat] = useState("Destaques");
   const [showCVE, setShowCVE] = useState(false);
 
   useEffect(() => {
-    supabase.from("gastronomy_items").select("*").then(({ data }) => {
+    let query = supabase.from("gastronomy_items").select("*");
+    if (activeHotel) {
+      query = query.eq("hotel_id", activeHotel.id);
+    }
+    query.then(({ data }) => {
       if (data) setItems(data as MenuItem[]);
     });
-  }, []);
+  }, [activeHotel?.id]);
 
   const cats = ["Destaques", ...Array.from(new Set(items.map((i) => i.category || "Outros")))];
   const visible = activeCat === "Destaques"
@@ -52,6 +58,7 @@ const Gastronomy = () => {
         item_name: item.name,
         price: item.price_eur,
         status: "pending",
+        hotel_id: activeHotel?.id,
         room_number: ((user.user_metadata as any)?.room_number ?? "412"),
       });
       window.dispatchEvent(new CustomEvent("mh:account-update"));
@@ -86,7 +93,7 @@ const Gastronomy = () => {
         <div className="mt-6">
           <h1 className="font-display text-3xl font-semibold leading-tight">
             Ouril <br />
-            <span className="bg-gradient-primary bg-clip-text text-transparent">Restaurant & Bar</span>
+            <span className="bg-gradient-primary bg-clip-text text-transparent">{activeHotel?.name.split(" ")[1] || "Restaurant"} & Bar</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Alta gastronomia cabo-verdiana, servida na suite ou no rooftop.

@@ -4,8 +4,10 @@ import { Link } from "react-router-dom";
 import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
 import { useState } from "react";
+import { useHotel } from "@/components/HotelProvider";
 
 const Wellness = () => {
+  const { activeHotel } = useHotel();
   const [booking, setBooking] = useState<string | null>(null);
 
   const handleBook = (service: string) => {
@@ -30,7 +32,7 @@ const Wellness = () => {
         <div className="mt-8">
           <p className="text-[10px] uppercase tracking-[0.25em] text-primary">Wellness & Fitness</p>
           <h1 className="font-display text-3xl font-semibold mt-1">Recarregue as<br/>energias no Ouril.</h1>
-          <p className="text-sm text-muted-foreground mt-2">Piscina infinita, ginásio 24/7 e rituais de spa exclusivos.</p>
+          <p className="text-sm text-muted-foreground mt-2">Piscina infinita, ginásio 24/7 e rituais de spa exclusivos no Ouril {activeHotel?.city || "Mindelo"}.</p>
         </div>
 
         {/* Ginásio */}

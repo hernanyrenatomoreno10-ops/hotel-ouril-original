@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import { ArrowLeft, Send, Sparkles, Loader2, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { from: "user" | "ai"; text: string; actionType?: "gastronomy" | "experience"; actionData?: any };
@@ -26,12 +27,13 @@ const LANGUAGES = [
 
 const Concierge = () => {
   const { user } = useAuth();
+  const { activeHotel } = useHotel();
   const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const displayName = `Suite ${roomNumber}`;
   const userName = displayName;
   const [lang, setLang] = useState(LANGUAGES[0]);
   const [messages, setMessages] = useState<Msg[]>([
-    { from: "ai", text: `${LANGUAGES[0].greeting}, ${userName}. Sou o Soul, o seu concierge digital no Ouril Mindelo. Como posso ajudar?` },
+    { from: "ai", text: `${LANGUAGES[0].greeting}, ${userName}. Sou o Soul, o seu concierge digital no ${activeHotel?.name || "Ouril Hotels"}. Como posso ajudar?` },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -68,7 +70,10 @@ const Concierge = () => {
           const { service_type, description } = args;
           if (user?.id) {
             await supabase.from("service_requests").insert({
-              user_id: user.id, service_type, description,
+              user_id: user.id, 
+              service_type, 
+              description,
+              hotel_id: activeHotel?.id
             });
           }
           import("sonner").then(({ toast }) => toast.success(`Pedido registado: ${service_type}`));
@@ -159,6 +164,7 @@ const Concierge = () => {
                           title: m.actionData.title,
                           place: m.actionData.place,
                           status: "confirmed",
+                          hotel_id: activeHotel?.id,
                         });
                       }
                       import("sonner").then(({ toast }) => toast.success(`Reserva confirmada: ${m.actionData.title}`));
@@ -194,6 +200,7 @@ const Concierge = () => {
                             item_name: m.actionData.item_name,
                             price: m.actionData.price,
                             status: "pending",
+                            hotel_id: activeHotel?.id,
                           });
                         }
                         import("sonner").then(({ toast }) => toast.success(`Pedido enviado: ${m.actionData.item_name}`));

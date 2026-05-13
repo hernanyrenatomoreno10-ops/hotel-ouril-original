@@ -14,10 +14,12 @@ import { motion } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
 import { useTheme } from "@/components/ThemeProvider";
+import { useHotel } from "@/components/HotelProvider";
 
 const Index = () => {
   const { user } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { activeHotel, hotels, setActiveHotel } = useHotel();
   const phase = useDayPhase();
   const greeting = phaseGreeting(phase);
   const isNight = phase === "night" || phase === "evening";
@@ -86,7 +88,7 @@ const Index = () => {
                 <span className="font-display text-base font-bold bg-gradient-primary bg-clip-text text-transparent">Ø</span>
               </div>
               <div className="leading-tight">
-                <p className="text-[10px] uppercase tracking-[0.18em] text-primary">Ouril Mindelo</p>
+                <p className="text-[10px] uppercase tracking-[0.18em] text-primary">{activeHotel?.name || "Ouril Hotels"}</p>
                 <p className="text-sm font-display font-semibold">In-Suite Hub</p>
               </div>
             </div>
@@ -111,7 +113,7 @@ const Index = () => {
           <FadeUp className="mt-auto" delay={0.05}>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {isNight ? <Moon className="h-3.5 w-3.5 text-primary" /> : <Sun className="h-3.5 w-3.5 text-primary" />}
-              <span>{greeting} · 24°C · Mindelo</span>
+              <span>{greeting} · 24°C · {activeHotel?.city || "Mindelo"}</span>
             </div>
             <h1 className="mt-3 font-display text-display-xl font-semibold text-balance">
               {greeting},<br />
@@ -131,7 +133,7 @@ const Index = () => {
                     {currentBooking?.room_name ?? "Suite Atlântica"} · {roomNumber}
                   </p>
                   <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                    <MapPin className="h-3 w-3" /> Ouril Mindelo · {currentBooking?.check_out_date ? `saída ${new Date(currentBooking.check_out_date).toLocaleDateString('pt-PT', {day: '2-digit', month: 'short'})}` : "4 noites"}
+                    <MapPin className="h-3 w-3" /> {activeHotel?.name} · {activeHotel?.city} · {currentBooking?.check_out_date ? `saída ${new Date(currentBooking.check_out_date).toLocaleDateString('pt-PT', {day: '2-digit', month: 'short'})}` : "4 noites"}
                   </p>
                 </div>
                 <a href="tel:9" onClick={() => haptic("tap")} aria-label="Chamar Receção"
@@ -141,6 +143,32 @@ const Index = () => {
               </div>
             )}
           </FadeUp>
+
+          {/* Super App Hotel Selector (Dev/Guest Mode Only) */}
+          {sessionStorage.getItem("guest_mode") === "true" && (
+            <FadeUp delay={0.2} className="relative z-10 mb-6">
+              <p className="text-[9px] uppercase tracking-[0.25em] text-white/60 mb-2.5 ml-1">Navegar como Super App</p>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar">
+                {hotels.map((h) => (
+                  <button
+                    key={h.id}
+                    onClick={() => {
+                      haptic("soft");
+                      setActiveHotel(h);
+                      toast.success(`Modo: ${h.name}`);
+                    }}
+                    className={`shrink-0 h-9 px-4 rounded-full border text-[10px] font-bold transition-all ${
+                      activeHotel?.id === h.id 
+                        ? "bg-primary text-primary-foreground border-primary shadow-glow" 
+                        : "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20"
+                    }`}
+                  >
+                    {h.name.replace("Ouril ", "")}
+                  </button>
+                ))}
+              </div>
+            </FadeUp>
+          )}
         </div>
       </header>
 

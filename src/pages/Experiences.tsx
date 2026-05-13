@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 import santo from "@/assets/experience-santoantao.jpg";
 import morna from "@/assets/experience-morna.jpg";
 import sailing from "@/assets/experience-sailing.jpg";
@@ -52,6 +53,7 @@ const SEED_ITEMS: any[] = [
 
 const Experiences = () => {
   const { user } = useAuth();
+  const { activeHotel } = useHotel();
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("Tudo");
   const [reservingId, setReservingId] = useState<string | null>(null);
@@ -59,11 +61,15 @@ const Experiences = () => {
 
   useEffect(() => {
     fetchExperiences();
-  }, []);
+  }, [activeHotel?.id]);
 
   const fetchExperiences = async () => {
     try {
-      const { data, error } = await supabase.from('experiences').select('*');
+      let query = supabase.from('experiences').select('*');
+      if (activeHotel) {
+        query = query.eq('hotel_id', activeHotel.id);
+      }
+      const { data, error } = await query;
       if (error) throw error;
       if (data && data.length > 0) {
         // Internas do Ouril primeiro
@@ -142,7 +148,7 @@ const Experiences = () => {
         <div className="mt-6">
           <h1 className="font-display text-3xl font-semibold leading-tight">
             Experiências<br />
-            <span className="bg-gradient-primary bg-clip-text text-transparent">Mindelo curadas</span>
+            <span className="bg-gradient-primary bg-clip-text text-transparent">{activeHotel?.city || "Mindelo"} curadas</span>
           </h1>
           <p className="text-sm text-muted-foreground mt-2 max-w-sm">
             Selecionadas pelos nossos concierges locais. Reserva instantânea no quarto.

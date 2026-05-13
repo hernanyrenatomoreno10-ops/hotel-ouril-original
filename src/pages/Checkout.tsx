@@ -3,6 +3,7 @@ import AppShell from "@/components/AppShell";
 import { ArrowLeft, Check, ScanFace, FileText, CreditCard, Stethoscope, Sparkles, Wine, Landmark, ConciergeBell } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 import { haptic } from "@/lib/haptics";
 import { supabase } from "@/integrations/supabase/client";
 import { FadeUp } from "@/components/Motion";
@@ -18,6 +19,7 @@ const Checkout = () => {
   const [step, setStep] = useState(0);
   const done = step >= steps.length;
   const { user, signOut } = useAuth();
+  const { activeHotel } = useHotel();
   const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const navigate = useNavigate();
 
@@ -32,10 +34,10 @@ const Checkout = () => {
     try {
       const [appts, gastro, exps, svc, bk] = await Promise.all([
         supabase.from("medical_appointments").select("specialty,status").eq("status", "confirmed"),
-        supabase.from("gastronomy_orders").select("item_name,price"),
-        supabase.from("experience_reservations").select("title,price_eur,status").eq("status", "confirmed"),
-        supabase.from("service_requests").select("description,service_type,price").gt("price", 0),
-        supabase.from("bookings").select("check_in_date,check_out_date,nightly_rate,hotels(tourist_tax_per_night,name)").limit(1).maybeSingle(),
+        supabase.from("gastronomy_orders").select("item_name,price").eq("hotel_id", activeHotel?.id || ""),
+        supabase.from("experience_reservations").select("title,price_eur,status").eq("status", "confirmed").eq("hotel_id", activeHotel?.id || ""),
+        supabase.from("service_requests").select("description,service_type,price").gt("price", 0).eq("hotel_id", activeHotel?.id || ""),
+        supabase.from("bookings").select("check_in_date,check_out_date,nightly_rate,hotels(tourist_tax_per_night,name)").eq("hotel_id", activeHotel?.id || "").limit(1).maybeSingle(),
       ]);
 
       const PRICE_BY_SPECIALTY: Record<string, number> = {
@@ -236,7 +238,7 @@ const Checkout = () => {
             </div>
             <h1 className="font-display text-3xl font-semibold mt-6">Até breve, {displayName}.</h1>
             <p className="text-sm text-muted-foreground mt-2 max-w-xs mx-auto">
-              A sua fatura foi enviada por email. Mindelo aguarda o seu regresso.
+              A sua fatura foi enviada por email. {activeHotel?.city || "Mindelo"} aguarda o seu regresso.
             </p>
             <button
               onClick={async () => {
@@ -248,6 +250,7 @@ const Checkout = () => {
                       user_id: u.id, service_type: "Bellboy",
                       description: "Recolha de bagagem na suite para checkout",
                       room_number: roomNumber,
+                      hotel_id: activeHotel?.id,
                     });
                   }
                 } catch {}

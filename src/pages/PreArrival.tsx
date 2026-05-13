@@ -8,9 +8,11 @@ import { haptic } from "@/lib/haptics";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/components/AuthProvider";
+import { useHotel } from "@/components/HotelProvider";
 
 const PreArrival = () => {
   const { user } = useAuth();
+  const { activeHotel } = useHotel();
   const roomNumber = (user?.user_metadata as any)?.room_number ?? "412";
   const [temp, setTemp] = useState<number[]>([22]);
   const [champagne, setChampagne] = useState(false);
@@ -33,6 +35,7 @@ const PreArrival = () => {
           service_type: "Pre-Arrival",
           description: `Temp: ${temp[0]}°C. Extras: ${extras || "Nenhum"}`,
           room_number: roomNumber,
+          hotel_id: activeHotel?.id,
         });
       }
     } catch {}

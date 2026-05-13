@@ -6,11 +6,24 @@ import Spotlight from "./Spotlight";
 import InstallBanner from "./InstallBanner";
 import { haptic } from "@/lib/haptics";
 
+import { useHotel } from "./HotelProvider";
+
 export const AppShell = ({ children }: { children: ReactNode }) => {
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const { activeHotel } = useHotel();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {/* Super App Indicator */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] animate-fade-in pointer-events-none">
+        <div className="glass px-3 py-1 rounded-full border-primary/20 flex items-center gap-2 shadow-glow">
+          <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-primary/80">
+            Ouril {activeHotel?.city || "Mindelo"}
+          </span>
+        </div>
+      </div>
+      
       <main className="pb-32">{children}</main>
 
       {/* Staff Quick Access (Dev Mode) */}
